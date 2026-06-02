@@ -15,6 +15,7 @@ include(fb.ProfilePath + 'Sliderbar\\Core\\MessageUtils.js');
 include(fb.ProfilePath + 'Sliderbar\\Actions\\FileActions.js');
 include(fb.ProfilePath + 'Sliderbar\\Actions\\YearPaths.js');
 include(fb.ProfilePath + 'Sliderbar\\Actions\\YearExplorer.js');
+include(fb.ProfilePath + 'Sliderbar\\Actions\\NewgroundsOpener.js');
 include(fb.ProfilePath + 'Sliderbar\\UI\\ButtonActions.js');
 include(fb.ProfilePath + 'Sliderbar\\UI\\Buttons.js');
 include(fb.ProfilePath + 'Sliderbar\\UI\\Renderer.js');
