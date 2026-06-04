@@ -1,7 +1,8 @@
 function showYTMenu(x, y) {
   try {
     const items = [
-      { id: 1, text: "YT NG Downloader", action: () => runPythonScript(PATHS.ytng_py) },
+      // runPythonScript(PATHS.ytng_py) 
+      { id: 1, text: "Omniget Downloader", action: () => fb.RunContextCommand("Run service/Download with Omniget") },
       { id: 2, text: "Youtube Searcher", action: () => fb.RunMainMenuCommand("View/Youtube Source/Search on Site") },
     ];
 

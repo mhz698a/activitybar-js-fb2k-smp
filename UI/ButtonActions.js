@@ -17,15 +17,11 @@ function actionEffectsMenu(x, y) {
 }
 
 function actionExploreDirectory() {
-    fb.RunContextCommand(
-        "Run service/Explore Directory"
-    );
+    fb.RunContextCommand("Run service/Explore Directory");
 }
 
-function actionGoogleArtistTitle() {
-    fb.RunContextCommand(
-        "Run service/Google Artist + Title"
-    );
+function actionGoogleArtistTitle(x, y) {
+    showGoogleSearcherSongsMenu(x, y);
 }
 
 function actionFileMenu(x, y) {
@@ -34,4 +30,8 @@ function actionFileMenu(x, y) {
 
 function actionYTMenu(x, y) {
     showYTMenu(x, y);
+}
+
+function actionShazam() {
+    fb.RunContextCommand("Run service/Search with Shazam");
 }

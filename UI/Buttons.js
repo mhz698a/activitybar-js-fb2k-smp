@@ -7,4 +7,5 @@ const buttons = [
   { icon: "\uf1a0", action: actionGoogleArtistTitle },
   { icon: "\uf040", action: actionFileMenu },
   { icon: "\uf16a", action: actionYTMenu },
+  { icon: "\uf130", action: actionShazam },
 ];

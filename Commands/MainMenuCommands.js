@@ -1,7 +1,8 @@
 const SMP_COMMANDS = {
     1001: { name: "Move Selected Files",   action: showAndRunMover },
     1002: { name: "Delete Selected Files", action: showAndRunDeletings },
-    1003: { name: "Open Newgrounds Page", action: openSelectedNewgroundsPage }
+    1003: { name: "Open Newgrounds Page", action: openSelectedNewgroundsPage },
+    1004: { name: "Google Searcher Songs", action: showGoogleSearcherSongsMenu }
 };
 
 function registerMainMenuCommands() {
