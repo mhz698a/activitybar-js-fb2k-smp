@@ -455,15 +455,22 @@ class MoverWindow(QtWidgets.QDialog):
             return
 
         if action == act_new:
-            name, ok = QInputDialog.getText(
-                self,
-                "Nueva subcarpeta",
-                "Nombre de la nueva carpeta:"
-            )
-            if not ok or not name.strip():
+            dlg = VerboseRenameDialog("", "", self, title="Crear subcarpeta nueva")
+            if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
                 return
 
-            new_dir = Path(base) / name.strip()
+            raw = dlg.selected_raw()
+            suffix = dlg.selected_suffix()
+
+            if not raw:
+                return
+
+            prefix_num = int(year) - 2003
+            final_name = f"{prefix_num:02d}. {raw}"
+            if suffix:
+                final_name = f"{final_name}.{suffix}"
+
+            new_dir = Path(base) / final_name
             try:
                 new_dir.mkdir(parents=True, exist_ok=False)
                 self.update_subfolders(year)

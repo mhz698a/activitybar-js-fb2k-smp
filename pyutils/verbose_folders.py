@@ -66,9 +66,9 @@ def split_prefixed_name(name: str):
     return prefix, raw, suffix
 
 class VerboseRenameDialog(QtWidgets.QDialog):
-    def __init__(self, raw_value="", suffix_value="", parent=None):
+    def __init__(self, raw_value="", suffix_value="", parent=None, title="Renombrar subcarpeta"):
         super().__init__(parent)
-        self.setWindowTitle("Renombrar subcarpeta")
+        self.setWindowTitle(title)
         self.resize(450, 80)
 
         layout = QVBoxLayout(self)
