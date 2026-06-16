@@ -339,11 +339,7 @@ class RenameDialog(QtWidgets.QWidget):
         date = self.date_edit.text().strip()
         disc = self.disc_edit.text().strip()
 
-        # if not date:
-        #     QtWidgets.QMessageBox.warning(self, "Fecha inválida", "La fecha es obligatoria.")
-        #     return None
-
-        if date and not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}Z)?", date):
+        if date and not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2}Z?)?", date):
             QtWidgets.QMessageBox.warning(
                 self,
                 "Fecha inválida",

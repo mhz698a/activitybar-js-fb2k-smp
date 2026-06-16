@@ -1,7 +1,7 @@
 const buttons = [
   { icon: "\uf07c", action: actionYearsMenu },
-  { icon: "\uf26c", action: actionFrameEtude },
-  { icon: "\uf004", action: actionStoreEtude },
+  { icon: "\uf03d", action: actionFrameEtude },
+  { icon: "\uf2d3", action: actionStoreEtude },
   { icon: "\uf1de", action: actionEffectsMenu },
   { icon: "\uf1a0", action: actionGoogleArtistTitle },
   { icon: "\uf040", action: actionFileMenu },
