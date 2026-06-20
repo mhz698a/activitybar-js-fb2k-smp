@@ -15,5 +15,5 @@ const PATHS = {
     enumScript:         `${BASEMAIN}\\enum_folder.py`,
     desenumScript:      `${BASEMAIN}\\desnum_folder.py`,
     frame_etude_py:     `${CLOUD}\\FrameEtude\\frame_etude.pyw`,
-    store_etude_py:     `${CLOUD}\\StoreEtude\\main.py`,
+    catch_etude_py:     `${CLOUD}\\CatchEtude\\catchetude.pyw`,
 };

@@ -4,8 +4,8 @@ function actionFrameEtude() {
     runPythonScript(PATHS.frame_etude_py, '', false);
 }
 
-function actionStoreEtude() {
-    runPythonScript(PATHS.store_etude_py, '', false);
+function actionCatchEtude() {
+    runPythonScript(PATHS.catch_etude_py, '', false);
 }
 
 function actionYearsMenu(x, y) {
