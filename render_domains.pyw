@@ -12,15 +12,19 @@ from PyQt6.QtGui import QFont, QIcon
 
 APP_DIR = Path(__file__).resolve().parent.as_posix()
 ICON_WIN = f"{APP_DIR}/assets/online.ico"
+JSON_DOMAINS = f"{APP_DIR}/__structure__/domains.json"
+CONTAINER_DOMAINS = f"{APP_DIR}/__structure__/container.json"
+
 myappid = 'etudetools.year_struct.render_domains.1.0'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
 class VasculumApp(QMainWindow):
-    def __init__(self, json_path="datos.json"):
+    def __init__(self, json_path, json_title):
         super().__init__()
         self.json_path = json_path
-        self.setWindowTitle("Vasculum de Nadia - Render Dinámico")
+        self._json_title = json_title
+        self.setWindowTitle("Visor de infraestrucutra de dominios")
         self.setStyleSheet("background-color: #1e1e1e; color: #ffffff;")
         self.init_ui()
 
@@ -36,22 +40,72 @@ class VasculumApp(QMainWindow):
             QMessageBox.critical(self, "Error de Lectura", f"No se pudo parsear el JSON:\n{str(e)}")
             return []
 
-    def extract_metadata_from_image_pattern(self, superdomain_key):
-        """
-        Mapeo dinámico para mantener los textos limpios y los códigos 
-        técnicos idénticos a la estructura de tu hoja de cálculo original.
-        """
-        mapping = {
-            "origines_de_natalia": {"title": "Origines de Natalia", "code": "[t13][e5][d:5-(5)-3][z0]"},
-            "recognitio_de_rachel": {"title": "Recognitio de Rachel", "code": "[t11][e4][d:3-(4)-4][z2]"},
-            "redimere_de_dorothy": {"title": "Redimere de Dorothy", "code": "[t12][e4][d:3-(4)-5][z1]"}
-        }
-        # Si el JSON trae un superdomain nuevo, genera metadatos automáticos para no romper la app
-        return mapping.get(superdomain_key, {
-            "title": superdomain_key.replace("_", " ").title(),
-            "code": "[t??][e?][d:?-?-?][z?]"
-        })
+    def get_containter_title(self) -> str:
+        # Validar si el archivo realmente existe en el disco
+        if not os.path.exists(self._json_title):
+            return "Contenedor Desconocido"
+            
+        try:
+            # Abrir y cargar el archivo JSON de manera segura
+            with open(self._json_title, 'r', encoding='utf-8') as f:
+                data = json.load(f)  # Se usa json.load() para archivos, no loads()
+            
+            # Validar que la lista no esté vacía y extraer el título
+            if isinstance(data, list) and len(data) > 0:
+                return (data[0].get("title_container", "Sin Título")).replace("_", " ").title()
+            
+            return "Estructura JSON Inválida"
+            
+        except Exception:
+            return "Error al leer título"
+            
+    def _range_year_count(self, range_text: str) -> int:
+        start_year, end_year = map(int, range_text.split("-"))
+        return end_year - start_year + 1
 
+    def build_superdomain_metadata(self, json_data, unique_superdomains):
+        """
+        Calcula los metadatos de cada superdomain directamente desde el JSON.
+
+        t = total de años del superdomain
+        e = años del segundo bloque del superdomain
+        d = años de cada bloque, marcando el segundo con paréntesis
+        z = diferencia contra el primer superdomain
+        """
+        
+        meta = {}
+        first_total = None
+
+        for index, superdomain in enumerate(unique_superdomains):
+            blocks = [b for b in json_data if b.get("superdomain") == superdomain]
+
+            counts = []
+            for block in blocks:
+                try:
+                    counts.append(self._range_year_count(block.get("range", "")))
+                except Exception:
+                    counts.append(0)
+
+            total_years = sum(counts)
+
+            if first_total is None:
+                first_total = total_years
+
+            second_count = counts[1] if len(counts) > 1 else 0
+            d_text = "-".join(
+                f"({count})" if i == 1 else str(count)
+                for i, count in enumerate(counts)
+            ) or "?"
+
+            z = abs(first_total - total_years) if first_total is not None else 0
+
+            meta[superdomain] = {
+                "title": superdomain.replace("_", " ").title(),
+                "code": f"[t{total_years}][e{second_count}][d:{d_text}][z{z}]"
+            }
+
+        return meta
+    
     def init_ui(self):
         # 1. Cargar datos frescos del archivo
         json_data = self.load_json_data()
@@ -65,7 +119,7 @@ class VasculumApp(QMainWindow):
         main_layout.setSpacing(15)
 
         # Título General Estático
-        title_label = QLabel("Vasculum de Nadia")
+        title_label = QLabel(self.get_containter_title())
         title_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("color: #ffffff; padding-bottom: 10px;")
@@ -76,15 +130,20 @@ class VasculumApp(QMainWindow):
         columns_layout.setSpacing(20)
 
         # 2. Descubrir columnas únicas presentes en el archivo JSON (mantiene el orden de aparición)
-        unique_superdomains = []
+        unique_superdomains = []        
         for item in json_data:
             s_domain = item.get("superdomain", "")
             if s_domain and s_domain not in unique_superdomains:
                 unique_superdomains.append(s_domain)
+        
+        superdomain_meta = self.build_superdomain_metadata(json_data, unique_superdomains)
 
         # 3. Construir cada columna iterando sobre el JSON estructurado
         for col_key in unique_superdomains:
-            meta = self.extract_metadata_from_image_pattern(col_key)
+            meta = superdomain_meta.get(col_key, {
+                "title": col_key.replace("_", " ").title(),
+                "code": "[t0][e0][d:?][z0]"
+            })
             
             col_widget = QWidget()
             col_layout = QVBoxLayout(col_widget)
@@ -169,6 +228,6 @@ if __name__ == "__main__":
     except Exception:
         pass
     
-    window = VasculumApp(f"{APP_DIR}/__structure__/domains.json")
+    window = VasculumApp(JSON_DOMAINS, CONTAINER_DOMAINS)
     window.show()
     sys.exit(app.exec())
