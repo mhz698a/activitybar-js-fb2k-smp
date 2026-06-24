@@ -8,6 +8,10 @@ function actionCatchEtude() {
     runPythonScript(PATHS.catch_etude_py, '', false);
 }
 
+function actionRenderDomains(){
+    runPythonScript(PATHS.render_domains_py, '', false);
+}
+
 function actionYearsMenu(x, y) {
     showYearFolderTreeMenu(x, y);
 }

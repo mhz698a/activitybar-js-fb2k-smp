@@ -14,6 +14,7 @@ const PATHS = {
     movetrashScript:    `${BASEMAIN}\\move_bin.py`,
     enumScript:         `${BASEMAIN}\\enum_folder.py`,
     desenumScript:      `${BASEMAIN}\\desnum_folder.py`,
+    render_domains_py:  `${BASEMAIN}\\render_domains.pyw`,
     frame_etude_py:     `${CLOUD}\\FrameEtude\\frame_etude.pyw`,
     catch_etude_py:     `${CLOUD}\\CatchEtude\\catchetude.pyw`,
 };
