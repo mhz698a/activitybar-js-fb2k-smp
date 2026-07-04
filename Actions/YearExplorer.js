@@ -1,7 +1,7 @@
 function showYearMenu(x, y, type) {
     try {
         const menu = window.CreatePopupMenu();
-        const ranges = getYearRanges(2004, 10);
+        const ranges = getYearRanges(1999, 10);
         let id = 1;
         const map = {};
 
@@ -37,7 +37,7 @@ function showYearFolderTreeMenu(x, y) {
         menu.AppendMenuItem(MF_DISABLED, 0, "Year Explorer");
         menu.AppendMenuSeparator();
 
-        for (let year = 2004; year <= currentYear; year++) {
+        for (let year = 1999; year <= currentYear; year++) {
             menu.AppendMenuItem(0, id, " " + year);
             yearMap[id] = year;
             id++;

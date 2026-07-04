@@ -12,5 +12,5 @@ function getYearRanges(startYear, span) {
 }
 
 function getPrefixFromYear(year) {
-    return String(year - 2003).padStart(2, "0");
+    return String(Math.max(0, year - 2003)).padStart(2, "0");
 }
