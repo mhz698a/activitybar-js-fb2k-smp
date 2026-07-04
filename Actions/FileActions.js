@@ -60,6 +60,26 @@ function renameDialog() {
   }
 }
 
+function year_connect_smb() {
+  const sel = plman.GetPlaylistSelectedItems(plman.ActivePlaylist);
+  if (!sel || sel.Count !== 1) {
+    showPopupSafe("Esta operación solo acepta UN archivo seleccionado.", "SMB Dialog connection");
+    return;
+  }
+  const filePath = sel[0].Path;
+  if (!filePath || !utils.FileExists(filePath)) {
+    showPopupSafe("El archivo seleccionado no existe o no es válido: " + filePath, "SMB Dialog connection");
+    return;
+  }
+  const cmdArgs = [filePath];
+  try {
+    // La versión original lanzaba Python oculto (shell.Run(cmd, 0, false));
+    runPythonScript(PATHS.smb_year_dialog, cmdArgs, false);
+  } catch (e) {
+    showPopupSafe("Error al lanzar comando:\n" + e + "\n", "Error");
+  }
+}
+
 function enumFolderDialog() {
   const sel = plman.GetPlaylistSelectedItems(plman.ActivePlaylist);
   if (!sel || sel.Count !== 1) {
@@ -119,6 +139,7 @@ function showFileActions(x, y) {
       8: { text: "Copy Paths", action: copySelectedFilePaths },
       9: { text: "Mp3Tag This Folder", action: openmp3Tag },
       10: { text: "Explore folder of current song", action: actionExploreDirectory },
+      11: { text: "Connect current yaer folder to SMB", action: year_connect_smb },
     };
 
     Object.entries(actions).forEach(([id, { text }]) =>
