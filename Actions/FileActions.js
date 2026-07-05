@@ -139,7 +139,7 @@ function showFileActions(x, y) {
       8: { text: "Copy Paths", action: copySelectedFilePaths },
       9: { text: "Mp3Tag This Folder", action: openmp3Tag },
       10: { text: "Explore folder of current song", action: actionExploreDirectory },
-      11: { text: "Connect current yaer folder to SMB", action: year_connect_smb },
+      11: { text: "Connect current year folder to SMB", action: year_connect_smb },
     };
 
     Object.entries(actions).forEach(([id, { text }]) =>
