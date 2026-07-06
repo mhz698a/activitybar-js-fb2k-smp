@@ -6,21 +6,10 @@ from pathlib import Path
 from PyQt6 import QtWidgets, QtCore, QtGui
 from mutagen.id3 import ID3, TALB, TPE1, ID3NoHeaderError
 from mutagen.mp4 import MP4
-
-# Import wctime for creation time restoration on Windows
-try:
-    if sys.platform == 'win32':
-        from pyutils.wctime import setctime_blocking
-    else:
-        def setctime_blocking(path, ts):
-            pass
-except (ImportError, AttributeError):
-    # Fallback if not available
-    def setctime_blocking(path, ts):
-        pass
+from pyutils.wctime import setctime_blocking
 
 # App ID for Taskbar Icon (following repository convention)
-MY_APP_ID = 'etudetools.mass_dialog.1.0'
+MY_APP_ID = 'etudetools.files_mgr.mass_dialog.1.0'
 try:
     if sys.platform == 'win32':
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(MY_APP_ID)
@@ -29,6 +18,7 @@ except Exception:
 
 APP_DIR = Path(__file__).resolve().parent.as_posix()
 ICON_PATH = f"{APP_DIR}/assets/mpc.ico"
+TXT_RUTAS = r"C:\Users\miche\OneDrive\foobar2000\profile\foobar_selection.txt"
 
 def exception_hook(exctype, value, tb):
     """Global exception handler to show traceback in a QMessageBox."""
@@ -42,7 +32,7 @@ def exception_hook(exctype, value, tb):
 sys.excepthook = exception_hook
 
 class MassWorker(QtCore.QObject):
-    finished = QtCore.pyqtSignal(bool) # Now carries 'success' status
+    finished = QtCore.pyqtSignal(bool)
     error = QtCore.pyqtSignal(str)
     locked_file = QtCore.pyqtSignal(str)
     progress = QtCore.pyqtSignal(int, int)
@@ -59,25 +49,25 @@ class MassWorker(QtCore.QObject):
             total = len(self.files)
             for i, (file_path, _, _) in enumerate(self.files):
                 try:
-                    # Save timestamps
+                    # Save mtime and atime
                     stat = os.stat(file_path)
                     mtime = stat.st_mtime
                     atime = stat.st_atime
                     ctime = getattr(stat, 'st_ctime', mtime)
 
                     ext = os.path.splitext(file_path)[1].lower()
-
+                    
                     if ext == '.mp3':
                         try:
                             audio = ID3(file_path)
                         except ID3NoHeaderError:
                             audio = ID3()
-
+                        
                         if self.album_val is not None:
                             audio.add(TALB(encoding=3, text=self.album_val))
                         if self.artist_val is not None:
                             audio.add(TPE1(encoding=3, text=self.artist_val))
-
+                        
                         if not getattr(audio, 'filename', None):
                              audio.save(file_path)
                         else:
@@ -90,22 +80,20 @@ class MassWorker(QtCore.QObject):
                         if self.artist_val is not None:
                             audio["\xa9ART"] = [self.artist_val]
                         audio.save()
-
-                    # Restore timestamps
+                    
+                    # Restore mtime
                     os.utime(file_path, (atime, mtime))
-                    # Restore creation time using wctime (Windows specific)
-                    if sys.platform == 'win32':
-                        setctime_blocking(file_path, ctime)
-
+                    setctime_blocking(file_path, ctime)
+                    
                 except PermissionError:
                     all_success = False
                     self.locked_file.emit(f"Archivo en uso: {os.path.basename(file_path)}")
                 except Exception as e:
                     # For other errors, we report them
                     raise e
-
+                
                 self.progress.emit(i + 1, total)
-
+            
             self.finished.emit(all_success)
         except Exception:
             self.error.emit(traceback.format_exc())
@@ -113,7 +101,7 @@ class MassWorker(QtCore.QObject):
 class MassDialog(QtWidgets.QDialog):
     def __init__(self, files):
         super().__init__()
-        self.files = files # list of (path, album, artist)
+        self.files = files # list of tuples (path, album, artist)
         self.init_ui()
 
     def init_ui(self):
@@ -128,12 +116,13 @@ class MassDialog(QtWidgets.QDialog):
         # File list view
         self.file_list_text = QtWidgets.QTextEdit()
         self.file_list_text.setReadOnly(True)
-
+        
         display_lines = []
         for path, alb, art in self.files:
             display_lines.append(f'{path} ["{alb}", "{art}"]')
 
         self.file_list_text.setPlainText("\n".join(display_lines))
+        
         layout.addWidget(QtWidgets.QLabel("Archivos a procesar:"))
         layout.addWidget(self.file_list_text)
 
@@ -185,7 +174,7 @@ class MassDialog(QtWidgets.QDialog):
         if album_checked and not self.album_input.text().strip():
             self.status_bar.showMessage("El valor de Álbum no puede estar vacío.", 3000)
             return
-
+        
         if artist_checked and not self.artist_input.text().strip():
             self.status_bar.showMessage("El valor de Artista no puede estar vacío.", 3000)
             return
@@ -194,11 +183,11 @@ class MassDialog(QtWidgets.QDialog):
         artist_val = self.artist_input.text() if artist_checked else None
 
         self.set_busy(True)
-
+        
         self.thread = QtCore.QThread()
         self.worker = MassWorker(self.files, album_val, artist_val)
         self.worker.moveToThread(self.thread)
-
+        
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.on_finished)
         self.worker.error.connect(self.on_worker_error)
@@ -224,7 +213,8 @@ class MassDialog(QtWidgets.QDialog):
             self.set_busy(False)
 
     def on_worker_error(self, err_traceback):
-        QtWidgets.QMessageBox.critical(self, "Error", f"Ocurrió un error durante el proceso:\n\n{err_traceback}")
+        QtWidgets.QMessageBox.critical(
+            self, "Error", f"Ocurrió un error durante el proceso:\n\n{err_traceback}")
         self.set_busy(False)
 
     def on_locked_file(self, message):
@@ -288,7 +278,7 @@ def load_files(file_path):
     lines = content.splitlines()
     valid_files_data = []
     supported_exts = ['.mp3', '.mp4', '.m4a', '.m4v']
-
+    
     for line in lines:
         line = line.strip()
         # Remove any leading \ufeff
@@ -301,23 +291,34 @@ def load_files(file_path):
                 abs_path = os.path.abspath(line)
                 alb, art = get_metadata(abs_path)
                 valid_files_data.append((abs_path, alb, art))
-
+    
     return valid_files_data
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-
+    
     if len(sys.argv) < 2:
-        QtWidgets.QMessageBox.critical(None, "Error", "Uso: mass_dialog.pyw <archivo_txt>")
-        return
-
-    txt_path = sys.argv[1]
-
+        txt_path = TXT_RUTAS
+    else:
+        txt_path = sys.argv[1]
+    
     try:
         files = load_files(txt_path)
     except Exception:
         err_msg = traceback.format_exc()
-        QtWidgets.QMessageBox.critical(None, "Error de Lectura", f"Error al leer el archivo de entrada:\n\n{err_msg}")
+        
+        # 1. Crear la instancia del cuadro de diálogo
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+        msg.setWindowTitle("Error de Lectura")
+        
+        # 2. Separar el mensaje amigable del error técnico
+        msg.setText("Error al leer el archivo de entrada.")
+        msg.setInformativeText("Haz clic en 'Show Details...' para ver el error técnico.")
+        msg.setDetailedText(err_msg) # Aquí se guarda el traceback
+        
+        # 3. Mostrar la ventana
+        msg.exec()
         return
 
     if not files:
