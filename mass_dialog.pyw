@@ -49,7 +49,7 @@ class MassWorker(QtCore.QObject):
 
     def __init__(self, files, album_val, artist_val):
         super().__init__()
-        self.files = files
+        self.files = files # list of tuples (path, album, artist)
         self.album_val = album_val
         self.artist_val = artist_val
 
@@ -57,7 +57,7 @@ class MassWorker(QtCore.QObject):
         all_success = True
         try:
             total = len(self.files)
-            for i, file_path in enumerate(self.files):
+            for i, (file_path, _, _) in enumerate(self.files):
                 try:
                     # Save timestamps
                     stat = os.stat(file_path)
@@ -113,14 +113,14 @@ class MassWorker(QtCore.QObject):
 class MassDialog(QtWidgets.QDialog):
     def __init__(self, files):
         super().__init__()
-        self.files = files
+        self.files = files # list of (path, album, artist)
         self.init_ui()
 
     def init_ui(self):
         self.setWindowTitle("Asignación masiva de etiquetas")
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QtGui.QIcon(ICON_PATH))
-        self.resize(600, 500)
+        self.resize(800, 500)
         self.setModal(False)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -128,7 +128,12 @@ class MassDialog(QtWidgets.QDialog):
         # File list view
         self.file_list_text = QtWidgets.QTextEdit()
         self.file_list_text.setReadOnly(True)
-        self.file_list_text.setPlainText("\n".join(self.files))
+
+        display_lines = []
+        for path, alb, art in self.files:
+            display_lines.append(f'{path} ["{alb}", "{art}"]')
+
+        self.file_list_text.setPlainText("\n".join(display_lines))
         layout.addWidget(QtWidgets.QLabel("Archivos a procesar:"))
         layout.addWidget(self.file_list_text)
 
@@ -231,6 +236,30 @@ class MassDialog(QtWidgets.QDialog):
         self.status_bar.clearMessage()
         self.status_bar.setStyleSheet("")
 
+def get_metadata(file_path):
+    album = ""
+    artist = ""
+    ext = os.path.splitext(file_path)[1].lower()
+    try:
+        if ext == '.mp3':
+            try:
+                audio = ID3(file_path)
+                if 'TALB' in audio:
+                    album = str(audio['TALB'])
+                if 'TPE1' in audio:
+                    artist = str(audio['TPE1'])
+            except ID3NoHeaderError:
+                pass
+        elif ext in ['.mp4', '.m4a', '.m4v']:
+            audio = MP4(file_path)
+            if "\xa9alb" in audio:
+                album = audio["\xa9alb"][0]
+            if "\xa9ART" in audio:
+                artist = audio["\xa9ART"][0]
+    except Exception:
+        pass
+    return album, artist
+
 def load_files(file_path):
     if not os.path.exists(file_path):
         QtWidgets.QMessageBox.critical(None, "Error", f"El archivo '{file_path}' no existe.")
@@ -257,7 +286,7 @@ def load_files(file_path):
         return []
 
     lines = content.splitlines()
-    valid_files = []
+    valid_files_data = []
     supported_exts = ['.mp3', '.mp4', '.m4a', '.m4v']
 
     for line in lines:
@@ -269,9 +298,11 @@ def load_files(file_path):
         if os.path.isfile(line):
             ext = os.path.splitext(line)[1].lower()
             if ext in supported_exts:
-                valid_files.append(os.path.abspath(line))
+                abs_path = os.path.abspath(line)
+                alb, art = get_metadata(abs_path)
+                valid_files_data.append((abs_path, alb, art))
 
-    return valid_files
+    return valid_files_data
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
