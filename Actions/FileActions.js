@@ -146,6 +146,7 @@ function showFileActions(x, y) {
       { text: "View Recicler Bin", action: openTrashFolder },
       { text: "Delete Selected Files", action: showAndRunDeletings },
       { text: "Rename Selected File", action: renameDialog },
+      { text: "Mass Selected File", action: showAndRunMassDialog },
       { text: "Enumerate Folder", action: enumFolderDialog },
       { text: "Des-Enumerate Folder", action: desenumFolderDialog },
       { text: "Copy Names", action: copySelectedFileNames },
@@ -153,7 +154,6 @@ function showFileActions(x, y) {
       { text: "Mp3Tag This Folder", action: openmp3Tag },
       { text: "Explore folder of current song", action: actionExploreDirectory },
       { text: "Connect current year to SMB", action: year_connect_smb },
-      { text: "Apply Album/Artist to mass", action: showAndRunMassDialog },
     ];
 
     // 2. Agregamos los ítems usando el índice del arreglo (+1 para evitar el ID 0)
