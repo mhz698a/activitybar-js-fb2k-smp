@@ -26,6 +26,18 @@ function showAndRunMover() {
   runPythonScript(PATHS.moverScript, [listFile], false);
 }
 
+function showAndRunMassDialog() {
+  const paths = getSelectedPathsArray();
+  if (!paths) { showPopupSafe("No hay archivos seleccionados.", "Mover archivos"); return; }
+  const listFile = fb.ProfilePath + "\\foobar_selection.txt";
+  if (!writeSelectionToFile(listFile, paths)) { 
+    showPopupSafe("Error creando archivo de rutas: " + listFile, "Error"); 
+    return; 
+  }
+  // lanzar script con argumento listFile
+  runPythonScript(PATHS.mass_dialog, [listFile], false);
+}
+
 function showAndRunDeletings() {
   const paths = getSelectedPathsArray();
   if (!paths) { showPopupSafe("No hay archivos seleccionados.", "Mover archivos"); return; }
@@ -127,31 +139,36 @@ function actionExploreDirectory() {
 function showFileActions(x, y) {
   try {
     const menu = window.CreatePopupMenu();
+    
+    // 1. Transformamos el objeto en un arreglo secuencial
+    const actions = [
+      { text: "Move Selected Files", action: showAndRunMover },
+      { text: "View Recicler Bin", action: openTrashFolder },
+      { text: "Delete Selected Files", action: showAndRunDeletings },
+      { text: "Rename Selected File", action: renameDialog },
+      { text: "Enumerate Folder", action: enumFolderDialog },
+      { text: "Des-Enumerate Folder", action: desenumFolderDialog },
+      { text: "Copy Names", action: copySelectedFileNames },
+      { text: "Copy Paths", action: copySelectedFilePaths },
+      { text: "Mp3Tag This Folder", action: openmp3Tag },
+      { text: "Explore folder of current song", action: actionExploreDirectory },
+      { text: "Connect current year to SMB", action: year_connect_smb },
+      { text: "Apply Album/Artist to mass", action: showAndRunMassDialog },
+    ];
 
-    const actions = {
-      1: { text: "Move Selected Files", action: showAndRunMover },
-      2: { text: "View Recicler Bin", action: openTrashFolder },
-      3: { text: "Delete Selected Files", action: showAndRunDeletings },
-      4: { text: "Rename Selected File", action: renameDialog },
-      5: { text: "Enumerate Folder", action: enumFolderDialog },
-      6: { text: "Des-Enumerate Folder", action: desenumFolderDialog },
-      7: { text: "Copy Names", action: copySelectedFileNames },
-      8: { text: "Copy Paths", action: copySelectedFilePaths },
-      9: { text: "Mp3Tag This Folder", action: openmp3Tag },
-      10: { text: "Explore folder of current song", action: actionExploreDirectory },
-      11: { text: "Connect current year folder to SMB", action: year_connect_smb },
-    };
-
-    Object.entries(actions).forEach(([id, { text }]) =>
-      menu.AppendMenuItem(0, Number(id), text)
-    );
+    // 2. Agregamos los ítems usando el índice del arreglo (+1 para evitar el ID 0)
+    actions.forEach((item, index) => {
+      menu.AppendMenuItem(0, index + 1, item.text);
+    });
 
     const res = menu.TrackPopupMenu(x, y);
 
-    if (actions[res] && actions[res].action) {
-      actions[res].action();
+    // 3. Restamos 1 al resultado para obtener el elemento correcto del arreglo
+    const selectedAction = actions[res - 1];
+    
+    if (selectedAction && selectedAction.action) {
+      selectedAction.action();
     }
-
   } catch (e) {
     showPopupSafe(`Error al abrir el menú: ${e.message}`, "Error");
   }
