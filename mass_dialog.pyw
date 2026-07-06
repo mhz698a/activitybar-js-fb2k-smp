@@ -7,6 +7,18 @@ from PyQt6 import QtWidgets, QtCore, QtGui
 from mutagen.id3 import ID3, TALB, TPE1, ID3NoHeaderError
 from mutagen.mp4 import MP4
 
+# Import wctime for creation time restoration on Windows
+try:
+    if sys.platform == 'win32':
+        from pyutils.wctime import setctime_blocking
+    else:
+        def setctime_blocking(path, ts):
+            pass
+except (ImportError, AttributeError):
+    # Fallback if not available
+    def setctime_blocking(path, ts):
+        pass
+
 # App ID for Taskbar Icon (following repository convention)
 MY_APP_ID = 'etudetools.mass_dialog.1.0'
 try:
@@ -30,7 +42,7 @@ def exception_hook(exctype, value, tb):
 sys.excepthook = exception_hook
 
 class MassWorker(QtCore.QObject):
-    finished = QtCore.pyqtSignal()
+    finished = QtCore.pyqtSignal(bool) # Now carries 'success' status
     error = QtCore.pyqtSignal(str)
     locked_file = QtCore.pyqtSignal(str)
     progress = QtCore.pyqtSignal(int, int)
@@ -42,14 +54,16 @@ class MassWorker(QtCore.QObject):
         self.artist_val = artist_val
 
     def run(self):
+        all_success = True
         try:
             total = len(self.files)
             for i, file_path in enumerate(self.files):
                 try:
-                    # Save mtime and atime
+                    # Save timestamps
                     stat = os.stat(file_path)
                     mtime = stat.st_mtime
                     atime = stat.st_atime
+                    ctime = getattr(stat, 'st_ctime', mtime)
 
                     ext = os.path.splitext(file_path)[1].lower()
 
@@ -77,10 +91,14 @@ class MassWorker(QtCore.QObject):
                             audio["\xa9ART"] = [self.artist_val]
                         audio.save()
 
-                    # Restore mtime
+                    # Restore timestamps
                     os.utime(file_path, (atime, mtime))
+                    # Restore creation time using wctime (Windows specific)
+                    if sys.platform == 'win32':
+                        setctime_blocking(file_path, ctime)
 
                 except PermissionError:
+                    all_success = False
                     self.locked_file.emit(f"Archivo en uso: {os.path.basename(file_path)}")
                 except Exception as e:
                     # For other errors, we report them
@@ -88,7 +106,7 @@ class MassWorker(QtCore.QObject):
 
                 self.progress.emit(i + 1, total)
 
-            self.finished.emit()
+            self.finished.emit(all_success)
         except Exception:
             self.error.emit(traceback.format_exc())
 
@@ -194,8 +212,11 @@ class MassDialog(QtWidgets.QDialog):
         self.artist_input.setEnabled(not busy)
         self.cancel_btn.setEnabled(not busy)
 
-    def on_finished(self):
-        self.close()
+    def on_finished(self, success):
+        if success:
+            self.close()
+        else:
+            self.set_busy(False)
 
     def on_worker_error(self, err_traceback):
         QtWidgets.QMessageBox.critical(self, "Error", f"Ocurrió un error durante el proceso:\n\n{err_traceback}")
