@@ -17,8 +17,8 @@ except Exception:
     pass
 
 APP_DIR = Path(__file__).resolve().parent.as_posix()
+TXT_RUTAS = (Path(__file__).resolve().parent.parent / "foobar_selection.txt").as_posix()
 ICON_PATH = f"{APP_DIR}/assets/mpc.ico"
-TXT_RUTAS = r"C:\Users\miche\OneDrive\foobar2000\profile\foobar_selection.txt"
 
 def exception_hook(exctype, value, tb):
     """Global exception handler to show traceback in a QMessageBox."""

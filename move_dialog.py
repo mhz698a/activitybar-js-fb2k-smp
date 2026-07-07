@@ -19,9 +19,9 @@ from pyutils.movewoker import clean_path, MoveWorker
 from pyutils.folder_move import YearPickerDialog, FolderMoveWorker
 from pyutils.verbose_folders import VerboseRenameDialog, split_prefixed_name
 
-APP_DIR = Path(__file__).resolve().parent.as_posix()
+APP_DIR = Path(__file__).resolve().parent.as_posix() 
+TXT_RUTAS = (Path(__file__).resolve().parent.parent / "foobar_selection.txt").as_posix()
 
-TXT_RUTAS = r"C:\Users\miche\OneDrive\foobar2000\profile\foobar_selection.txt"
 BASE_ROOT = r"E:\_Internal"
 ICON_WIN = f"{APP_DIR}/assets/mpc.ico"
 

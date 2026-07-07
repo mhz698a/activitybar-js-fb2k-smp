@@ -19,9 +19,9 @@ import requests
 # ==========================
 # CONFIGURACIÓN FIJA
 # ==========================
-TXT_RUTAS = r"C:\Users\miche\OneDrive\foobar2000\profile\\foobar_selection.txt"
-CARPETA_PAPELERA = r"E:\_Exclude\l_reallydeleted"
 APP_DIR = Path(__file__).resolve().parent.as_posix()
+TXT_RUTAS = (Path(__file__).resolve().parent.parent / "foobar_selection.txt").as_posix()
+CARPETA_PAPELERA = r"E:\_Exclude\l_reallydeleted"
 ICON_WIN = f"{APP_DIR}/assets/mpc.ico"
 
 # ==========================
