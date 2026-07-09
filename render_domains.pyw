@@ -261,7 +261,12 @@ class VasculumApp(QMainWindow):
                 if partial and j > 0:
                     break
 
-                bg = "#b93a82" if block.get("deuterodomain") == "alejandra_maya" else "#6a329f"
+                if block.get("exodomain") == "aurora_maya":
+                    bg = "#2b73d6"  # Azul (exodominios / dominios terciarios)
+                elif block.get("deuterodomain") == "alejandra_maya":
+                    bg = "#b93a82"  # Rosa/Magenta
+                else:
+                    bg = "#7c3ab9"  # Morado/Púrpura
 
                 years_count = self._range_year_count(block.get("range", ""))
                 try:
@@ -325,7 +330,7 @@ class VasculumApp(QMainWindow):
         self.view.setRenderHint(QPainter.RenderHint.TextAntialiasing)
         self.view.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         self.view.setFrameShape(QGraphicsView.Shape.NoFrame)
-        self.view.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.view.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.view.setBackgroundBrush(QBrush(QColor("#1e1e1e")))
         self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
 
