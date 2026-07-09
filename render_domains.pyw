@@ -77,8 +77,69 @@ class VasculumApp(QMainWindow):
             return "Error al leer título"
             
     def _range_year_count(self, range_text: str) -> int:
-        start_year, end_year = map(int, range_text.split("-"))
-        return end_year - start_year + 1
+        try:
+            start_year, end_year = map(int, range_text.split("-"))
+            return end_year - start_year + 1
+        except Exception:
+            return 0
+    def calculate_scene_rect(self):
+        """
+        Calcula el tamaño lógico del diagrama (Paso 4).
+        Basado en el análisis del renderizador antiguo:
+        - Márgenes: 30 (L), 20 (T), 30 (R), 30 (B).
+        - Espaciado título principal: 15 (espacio) + ~30 (altura título) + 10 (padding-bottom).
+        - Espaciado entre columnas: 20.
+        - Espaciado interno columna: 8.
+        """
+        margin_left = 30
+        margin_top = 20
+        margin_right = 30
+        margin_bottom = 30
+        spacing_main = 15
+        spacing_columns = 20
+        spacing_blocks = 8
+
+        # Título principal (~18pt + padding)
+        title_height = 40
+
+        # Superdomains (columnas)
+        unique_superdomains = []
+        for item in self.json_data:
+            sd = item.get("superdomain", "")
+            if sd and sd not in unique_superdomains:
+                unique_superdomains.append(sd)
+
+        num_columns = len(unique_superdomains)
+        column_width = 200 # Ancho aproximado para el cálculo lógico inicial
+
+        total_width = margin_left + margin_right + (num_columns * column_width) + (max(0, num_columns - 1) * spacing_columns)
+
+        # Altura máxima de columna
+        max_col_height = 0
+        for sd in unique_superdomains:
+            col_height = 0
+            # Meta code label (~10pt + padding)
+            col_height += 30 + spacing_blocks
+            # Title col label (~11pt + padding)
+            col_height += 35 + 10 + spacing_blocks
+
+            blocks = [b for b in self.json_data if b.get("superdomain") == sd]
+            for block in blocks:
+                # Bloque de años (Arial 10, ~15px por línea)
+                years = self._range_year_count(block.get("range", ""))
+                block_content_height = (years * 15) + 16 # padding
+                col_height += block_content_height + spacing_blocks
+
+                # Subetiqueta (~8pt, 2 líneas + padding)
+                col_height += 40 + 5 # padding-bottom
+
+            if col_height > max_col_height:
+                max_col_height = col_height
+
+        total_height = margin_top + title_height + spacing_main + max_col_height + margin_bottom
+
+        return 0, 0, total_width, total_height
+
 
     def build_superdomain_metadata(self, json_data, unique_superdomains):
         """
@@ -148,9 +209,16 @@ class VasculumApp(QMainWindow):
         self.view.setBackgroundBrush(QBrush(QColor("#1e1e1e")))
         self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
 
+        # 4. Crear la escena y asignarla al View (Paso 3)
+        self.scene = QGraphicsScene()
+        self.view.setScene(self.scene)
+
+        # 5. Calcular SceneRect (Paso 4)
+        rect = self.calculate_scene_rect()
+        self.scene.setSceneRect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+
         self.setCentralWidget(self.view)
         self.setMinimumSize(850, 650)
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     try:
