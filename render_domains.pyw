@@ -13,6 +13,9 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QPainter
 
+from domain_item import DomainItem
+from domain_label_item import DomainLabelItem
+
 # --- ANÁLISIS DEL RENDERIZADOR ACTUAL (PASO 1) ---
 # Responsabilidades identificadas:
 # - Construcción de ventana: VasculumApp.__init__ e init_ui.
@@ -61,27 +64,28 @@ class VasculumApp(QMainWindow):
         # Validar si el archivo realmente existe en el disco
         if not os.path.exists(self._json_title):
             return "Contenedor Desconocido"
-            
+
         try:
             # Abrir y cargar el archivo JSON de manera segura
             with open(self._json_title, 'r', encoding='utf-8') as f:
                 data = json.load(f)  # Se usa json.load() para archivos, no loads()
-            
+
             # Validar que la lista no esté vacía y extraer el título
             if isinstance(data, list) and len(data) > 0:
                 return (data[0].get("title_container", "Sin Título")).replace("_", " ").title()
-            
+
             return "Estructura JSON Inválida"
-            
+
         except Exception:
             return "Error al leer título"
-            
+
     def _range_year_count(self, range_text: str) -> int:
         try:
             start_year, end_year = map(int, range_text.split("-"))
             return end_year - start_year + 1
         except Exception:
             return 0
+
     def calculate_scene_rect(self):
         """
         Calcula el tamaño lógico del diagrama (Paso 4).
@@ -140,7 +144,6 @@ class VasculumApp(QMainWindow):
 
         return 0, 0, total_width, total_height
 
-
     def build_superdomain_metadata(self, json_data, unique_superdomains):
         """
         Calcula los metadatos de cada superdomain directamente desde el JSON.
@@ -150,7 +153,7 @@ class VasculumApp(QMainWindow):
         d = años de cada bloque, marcando el segundo con paréntesis
         z = diferencia contra el primer superdomain
         """
-        
+
         meta = {}
         first_total = None
 
@@ -183,7 +186,99 @@ class VasculumApp(QMainWindow):
             }
 
         return meta
-    
+
+    def render_scene(self, partial=False):
+        """
+        Realiza el renderizado de la escena (Pasos 7, 8, 9).
+        """
+        margin_left = 30
+        margin_top = 20
+        spacing_main = 15
+        spacing_columns = 20
+        spacing_blocks = 8
+        column_width = 200
+
+        # Título General
+        title_item = DomainLabelItem(self.get_containter_title(), font_size=18, is_bold=True)
+        # Centrado manual aproximado (usando rect de la escena)
+        scene_w = self.scene.sceneRect().width()
+        title_w = title_item.boundingRect().width()
+        title_item.set_absolute_position((scene_w - title_w) / 2, margin_top)
+        self.scene.addItem(title_item)
+
+        y_start_columns = margin_top + 40 + spacing_main
+
+        unique_superdomains = []
+        for item in self.json_data:
+            sd = item.get("superdomain", "")
+            if sd and sd not in unique_superdomains:
+                unique_superdomains.append(sd)
+
+        for i, sd in enumerate(unique_superdomains):
+            # Si es parcial, solo procesamos el primer superdomain
+            if partial and i > 0:
+                break
+
+            current_x = margin_left + i * (column_width + spacing_columns)
+            current_y = y_start_columns
+
+            meta = self.superdomain_meta.get(sd, {"code": "[?]", "title": sd})
+
+            # Celda Código (Paso 9)
+            code_item = DomainItem((current_x, current_y, column_width, 30), "#2d2d2d", border_color_hex="#444444", border_width=1)
+            self.scene.addItem(code_item)
+            code_label = DomainLabelItem(meta["code"], font_family="Consolas", font_size=10, color_hex="#b0b0b0")
+            cl_w = code_label.boundingRect().width()
+            code_label.set_absolute_position(current_x + (column_width - cl_w) / 2, current_y + 5)
+            self.scene.addItem(code_label)
+
+            current_y += 30 + spacing_blocks
+
+            # Celda Título Columna (Paso 9)
+            title_col_item = DomainItem((current_x, current_y, column_width, 35), "#2d2d2d", border_color_hex="#444444", border_width=1)
+            self.scene.addItem(title_col_item)
+            title_col_label = DomainLabelItem(meta["title"], font_size=11, is_bold=True)
+            tcl_w = title_col_label.boundingRect().width()
+            title_col_label.set_absolute_position(current_x + (column_width - tcl_w) / 2, current_y + 8)
+            self.scene.addItem(title_col_label)
+
+            current_y += 35 + 10
+
+            blocks = [b for b in self.json_data if b.get("superdomain") == sd]
+            for j, block in enumerate(blocks):
+                # Si es parcial, solo procesamos el primer bloque
+                if partial and j > 0:
+                    break
+
+                bg = "#b93a82" if block.get("deuterodomain") == "alejandra_maya" else "#6a329f"
+
+                years_count = self._range_year_count(block.get("range", ""))
+                try:
+                    start_year, end_year = map(int, block["range"].split("-"))
+                    years_text = "\n".join(str(y) for y in range(start_year, end_year + 1))
+                except Exception:
+                    years_text = block.get("range", "Error")
+
+                block_h = (years_count * 15) + 16
+                domain_item = DomainItem((current_x, current_y, column_width, block_h), bg)
+                self.scene.addItem(domain_item)
+
+                years_label = DomainLabelItem(years_text, font_size=10)
+                yl_w = years_label.boundingRect().width()
+                years_label.set_absolute_position(current_x + (column_width - yl_w) / 2, current_y + 8)
+                self.scene.addItem(years_label)
+
+                current_y += block_h + spacing_blocks
+
+                domain_title = block.get("domain", "").replace("_", " ").title()
+                info_text = f"{domain_title}\n({block.get('range', '')})"
+                info_label = DomainLabelItem(info_text, font_size=8, color_hex="#8a8a8a", is_italic=True)
+                il_w = info_label.boundingRect().width()
+                info_label.set_absolute_position(current_x + (column_width - il_w) / 2, current_y)
+                self.scene.addItem(info_label)
+
+                current_y += 40 + 5
+
     def init_ui(self):
         # 1. Cargar datos frescos del archivo
         self.json_data = self.load_json_data()
@@ -217,8 +312,12 @@ class VasculumApp(QMainWindow):
         rect = self.calculate_scene_rect()
         self.scene.setSceneRect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
 
+        # 6. Renderizado (Pasos 7, 8, 9)
+        self.render_scene(partial=False)
+
         self.setCentralWidget(self.view)
         self.setMinimumSize(850, 650)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     try:
