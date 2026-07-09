@@ -6,9 +6,26 @@ import sys
 import json
 import os
 import ctypes
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QMessageBox, QGraphicsView, QGraphicsScene
+)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QPainter
+
+# --- ANÁLISIS DEL RENDERIZADOR ACTUAL (PASO 1) ---
+# Responsabilidades identificadas:
+# - Construcción de ventana: VasculumApp.__init__ e init_ui.
+# - Renderizado: Actualmente NO usa paintEvent. Usa QLabels en layouts.
+# - Cálculos de geometría (Layout-based):
+#   - Márgenes: main_layout(30, 20, 30, 30).
+#   - Espaciado: main(15), columnas(20), bloques(8).
+#   - Título principal: Arial 18 Bold, centrado.
+#   - Columnas: Título (Arial 11 Bold) + Código (Consolas 10).
+#   - Bloques: Fondo según deuterodomain (#b93a82 o #6a329f), Arial 10.
+#   - Subetiquetas: Arial 8 Italic.
+# - Carga de datos: load_json_data() carga desde domains.json.
+# --------------------------------------------------
 
 APP_DIR = Path(__file__).resolve().parent.as_posix()
 ICON_WIN = f"{APP_DIR}/assets/online.ico"
@@ -108,117 +125,30 @@ class VasculumApp(QMainWindow):
     
     def init_ui(self):
         # 1. Cargar datos frescos del archivo
-        json_data = self.load_json_data()
-        if not json_data:
+        self.json_data = self.load_json_data()
+        if not self.json_data:
             sys.exit(1)
 
-        # Contenedor e interfaz principal
-        main_widget = QWidget()
-        main_layout = QVBoxLayout(main_widget)
-        main_layout.setContentsMargins(30, 20, 30, 30)
-        main_layout.setSpacing(15)
-
-        # Título General Estático
-        title_label = QLabel(self.get_containter_title())
-        title_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("color: #ffffff; padding-bottom: 10px;")
-        main_layout.addWidget(title_label)
-
-        # Layout Horizontal para las Columnas generadas dinámicamente
-        columns_layout = QHBoxLayout()
-        columns_layout.setSpacing(20)
-
-        # 2. Descubrir columnas únicas presentes en el archivo JSON (mantiene el orden de aparición)
-        unique_superdomains = []        
-        for item in json_data:
+        # 2. Preparar metadatos (necesarios para futuros pasos de renderizado)
+        unique_superdomains = []
+        for item in self.json_data:
             s_domain = item.get("superdomain", "")
             if s_domain and s_domain not in unique_superdomains:
                 unique_superdomains.append(s_domain)
-        
-        superdomain_meta = self.build_superdomain_metadata(json_data, unique_superdomains)
 
-        # 3. Construir cada columna iterando sobre el JSON estructurado
-        for col_key in unique_superdomains:
-            meta = superdomain_meta.get(col_key, {
-                "title": col_key.replace("_", " ").title(),
-                "code": "[t0][e0][d:?][z0]"
-            })
-            
-            col_widget = QWidget()
-            col_layout = QVBoxLayout(col_widget)
-            col_layout.setContentsMargins(0, 0, 0, 0)
-            col_layout.setSpacing(8)
-            col_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.superdomain_meta = self.build_superdomain_metadata(self.json_data, unique_superdomains)
 
-            # Celda con Código Técnico
-            code_label = QLabel(meta["code"])
-            code_label.setFont(QFont("Consolas", 10))
-            code_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            code_label.setStyleSheet("""
-                background-color: #2d2d2d; 
-                color: #b0b0b0; 
-                border: 1px solid #444444; 
-                padding: 6px;
-            """)
-            col_layout.addWidget(code_label)
+        # 3. Configurar QGraphicsView como widget central (Paso 2)
+        self.view = QGraphicsView()
+        self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.view.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        self.view.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        self.view.setFrameShape(QGraphicsView.Shape.NoFrame)
+        self.view.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.view.setBackgroundBrush(QBrush(QColor("#1e1e1e")))
+        self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
 
-            # Celda con Título de Columna
-            title_col_label = QLabel(meta["title"])
-            title_col_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
-            title_col_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            title_col_label.setStyleSheet("""
-                background-color: #2d2d2d; 
-                color: #ffffff; 
-                border: 1px solid #444444; 
-                padding: 8px;
-            """)
-            col_layout.addWidget(title_col_label)
-            col_layout.addSpacing(10)
-
-            # 4. Filtrar y pintar los bloques de años que pertenecen a esta columna exacta
-            blocks = [b for b in json_data if b.get("superdomain") == col_key]
-            for block in blocks:
-                # Lógica dinámica del color basada en deuterodomain
-                if block.get("deuterodomain") == "alejandra_maya":
-                    bg_color = "#b93a82"  # Rosa/Magenta
-                else:
-                    bg_color = "#6a329f"  # Morado/Púrpura
-
-                # Parsing dinámico del rango numérico ("AAAA-AAAA")
-                try:
-                    start_year, end_year = map(int, block["range"].split("-"))
-                    years_list = [str(y) for y in range(start_year, end_year + 1)]
-                    years_text = "\n".join(years_list)
-                except Exception:
-                    years_text = block.get("range", "Error Rango")
-
-                # Pintar Bloque de Años
-                block_label = QLabel(years_text)
-                block_label.setFont(QFont("Arial", 10))
-                block_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                block_label.setStyleSheet(f"""
-                    background-color: {bg_color}; 
-                    color: #ffffff; 
-                    border: 1.5px solid #ffffff; 
-                    border-radius: 2px;
-                    padding: 8px 0px;
-                """)
-                col_layout.addWidget(block_label)
-
-                # Pintar Subetiqueta informativa inferior del bloque
-                domain_raw = block.get("domain", "")
-                domain_title = domain_raw.replace("_", " ").title()
-                info_label = QLabel(f"{domain_title}\n({block.get('range', '')})")
-                info_label.setFont(QFont("Arial", 8, QFont.Weight.Medium, italic=True))
-                info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                info_label.setStyleSheet("color: #8a8a8a; padding-bottom: 5px;")
-                col_layout.addWidget(info_label)
-
-            columns_layout.addWidget(col_widget)
-
-        main_layout.addLayout(columns_layout)
-        self.setCentralWidget(main_widget)
+        self.setCentralWidget(self.view)
         self.setMinimumSize(850, 650)
 
 if __name__ == "__main__":
@@ -227,7 +157,7 @@ if __name__ == "__main__":
         app.setWindowIcon(QIcon(ICON_WIN))
     except Exception:
         pass
-    
+
     window = VasculumApp(JSON_DOMAINS, CONTAINER_DOMAINS)
     window.show()
     sys.exit(app.exec())
