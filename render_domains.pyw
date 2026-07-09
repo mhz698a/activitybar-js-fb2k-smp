@@ -11,10 +11,11 @@ from PyQt6.QtWidgets import (
     QLabel, QMessageBox, QGraphicsView, QGraphicsScene
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QPainter, QFontMetrics
+from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QPainter, QFontMetrics, QPainterPath
 
 from domain_item import DomainItem
 from domain_label_item import DomainLabelItem
+from ribbon_item import RibbonItem
 
 # --- ANÁLISIS DEL RENDERIZADOR ACTUAL (PASO 1) ---
 # Responsabilidades identificadas:
@@ -34,6 +35,7 @@ APP_DIR = Path(__file__).resolve().parent.as_posix()
 ICON_WIN = f"{APP_DIR}/assets/online.ico"
 JSON_DOMAINS = f"{APP_DIR}/__structure__/domains.json"
 CONTAINER_DOMAINS = f"{APP_DIR}/__structure__/container.json"
+JSON_RIBBONS = f"{APP_DIR}/__structure__/ribbons.json"
 
 myappid = 'etudetools.year_struct.render_domains.1.0'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
@@ -49,16 +51,17 @@ class VasculumApp(QMainWindow):
         self.setStyleSheet("background-color: #1e1e1e; color: #ffffff;")
         self.init_ui()
 
-    def load_json_data(self):
-        """Carga el archivo JSON de forma dinámica y maneja errores."""
-        if not os.path.exists(self.json_path):
-            QMessageBox.critical(self, "Error", f"No se encontró el archivo: {self.json_path}")
+    def load_json_data(self, path=None):
+        """Carga un archivo JSON de forma dinámica y maneja errores."""
+        target_path = path if path else self.json_path
+        if not os.path.exists(target_path):
+            QMessageBox.critical(self, "Error", f"No se encontró el archivo: {target_path}")
             return []
         try:
-            with open(self.json_path, 'r', encoding='utf-8') as f:
+            with open(target_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            QMessageBox.critical(self, "Error de Lectura", f"No se pudo parsear el JSON:\n{str(e)}")
+            QMessageBox.critical(self, "Error de Lectura", f"No se pudo parsear el JSON {target_path}:\n{str(e)}")
             return []
 
     def get_containter_title(self) -> str:
@@ -327,6 +330,52 @@ class VasculumApp(QMainWindow):
                 self.scene.addItem(info_label)
 
                 current_y += 40 + 5
+
+        # --- Renderizado de Ribbons (Paso 3 de Fase 2) ---
+        if not partial:
+            self.render_ribbons()
+
+    def render_ribbons(self):
+        """
+        Carga y dibuja los Ribbons conectando los años mapeados en year_map.
+        """
+        ribbons_data = self.load_json_data(JSON_RIBBONS)
+        if not ribbons_data:
+            return
+
+        for data in ribbons_data:
+            conn = data.get("connection", "")
+            try:
+                start_year, end_year = map(int, conn.split("-"))
+            except ValueError:
+                continue
+
+            if start_year in self.year_map and end_year in self.year_map:
+                p1 = self.year_map[start_year] # (x, y)
+                p2 = self.year_map[end_year] # (x, y)
+
+                # Crear QPainterPath con curva de Bézier
+                path = QPainterPath()
+                path.moveTo(p1[0], p1[1])
+
+                # Puntos de control con desplazamiento horizontal
+                # Si están en la misma columna, la curva se expande hacia la derecha
+                # Si están en columnas distintas, crea una curva suave
+                dx = abs(p2[0] - p1[0])
+                if dx < 10: # Misma columna (aproximadamente)
+                    offset = 100
+                else:
+                    offset = dx * 0.5
+
+                cp1 = (p1[0] + offset, p1[1])
+                cp2 = (p2[0] - offset, p2[1]) if dx >= 10 else (p2[0] + offset, p2[1])
+
+                path.cubicTo(cp1[0], cp1[1], cp2[0], cp2[1], p2[0], p2[1])
+
+                # Instanciar RibbonItem
+                ribbon_name = data.get("ribbon", "Ribbon")
+                ribbon_item = RibbonItem(path, text=ribbon_name)
+                self.scene.addItem(ribbon_item)
 
     def init_ui(self):
         # 1. Cargar datos frescos del archivo
