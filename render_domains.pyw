@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QLabel, QMessageBox, QGraphicsView, QGraphicsScene
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QPainter
+from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QPainter, QFontMetrics
 
 from domain_item import DomainItem
 from domain_label_item import DomainLabelItem
@@ -189,7 +189,8 @@ class VasculumApp(QMainWindow):
 
     def render_scene(self, partial=False):
         """
-        Realiza el renderizado de la escena (Pasos 7, 8, 9).
+        Realiza el renderizado de la escena (Pasos 7, 8, 9, 10).
+        Centraliza cálculos geométricos usando QFontMetrics.
         """
         margin_left = 30
         margin_top = 20
@@ -199,14 +200,18 @@ class VasculumApp(QMainWindow):
         column_width = 200
 
         # Título General
-        title_item = DomainLabelItem(self.get_containter_title(), font_size=18, is_bold=True)
-        # Centrado manual aproximado (usando rect de la escena)
+        title_text = self.get_containter_title()
+        title_font = QFont("Arial", 18, QFont.Weight.Bold)
+        fm_title = QFontMetrics(title_font)
+        title_w = fm_title.horizontalAdvance(title_text)
+        title_h = fm_title.height()
+
+        title_item = DomainLabelItem(title_text, font_family="Arial", font_size=18, is_bold=True)
         scene_w = self.scene.sceneRect().width()
-        title_w = title_item.boundingRect().width()
         title_item.set_absolute_position((scene_w - title_w) / 2, margin_top)
         self.scene.addItem(title_item)
 
-        y_start_columns = margin_top + 40 + spacing_main
+        y_start_columns = margin_top + title_h + 10 + spacing_main
 
         unique_superdomains = []
         for item in self.json_data:
@@ -224,21 +229,27 @@ class VasculumApp(QMainWindow):
 
             meta = self.superdomain_meta.get(sd, {"code": "[?]", "title": sd})
 
-            # Celda Código (Paso 9)
+            # Celda Código
+            code_font = QFont("Consolas", 10)
+            fm_code = QFontMetrics(code_font)
+            cl_w = fm_code.horizontalAdvance(meta["code"])
+
             code_item = DomainItem((current_x, current_y, column_width, 30), "#2d2d2d", border_color_hex="#444444", border_width=1)
             self.scene.addItem(code_item)
             code_label = DomainLabelItem(meta["code"], font_family="Consolas", font_size=10, color_hex="#b0b0b0")
-            cl_w = code_label.boundingRect().width()
             code_label.set_absolute_position(current_x + (column_width - cl_w) / 2, current_y + 5)
             self.scene.addItem(code_label)
 
             current_y += 30 + spacing_blocks
 
-            # Celda Título Columna (Paso 9)
+            # Celda Título Columna
+            title_col_font = QFont("Arial", 11, QFont.Weight.Bold)
+            fm_tcol = QFontMetrics(title_col_font)
+            tcl_w = fm_tcol.horizontalAdvance(meta["title"])
+
             title_col_item = DomainItem((current_x, current_y, column_width, 35), "#2d2d2d", border_color_hex="#444444", border_width=1)
             self.scene.addItem(title_col_item)
-            title_col_label = DomainLabelItem(meta["title"], font_size=11, is_bold=True)
-            tcl_w = title_col_label.boundingRect().width()
+            title_col_label = DomainLabelItem(meta["title"], font_family="Arial", font_size=11, is_bold=True)
             title_col_label.set_absolute_position(current_x + (column_width - tcl_w) / 2, current_y + 8)
             self.scene.addItem(title_col_label)
 
@@ -263,18 +274,32 @@ class VasculumApp(QMainWindow):
                 domain_item = DomainItem((current_x, current_y, column_width, block_h), bg)
                 self.scene.addItem(domain_item)
 
-                years_label = DomainLabelItem(years_text, font_size=10)
-                yl_w = years_label.boundingRect().width()
-                years_label.set_absolute_position(current_x + (column_width - yl_w) / 2, current_y + 8)
+                # Texto años (Arial 10)
+                years_font = QFont("Arial", 10)
+                fm_years = QFontMetrics(years_font)
+                max_yl_w = 0
+                for line in years_text.split("\n"):
+                    max_yl_w = max(max_yl_w, fm_years.horizontalAdvance(line))
+
+                years_label = DomainLabelItem(years_text, font_family="Arial", font_size=10)
+                years_label.set_absolute_position(current_x + (column_width - max_yl_w) / 2, current_y + 8)
                 self.scene.addItem(years_label)
 
                 current_y += block_h + spacing_blocks
 
+                # Subetiqueta (Arial 8 Italic)
                 domain_title = block.get("domain", "").replace("_", " ").title()
                 info_text = f"{domain_title}\n({block.get('range', '')})"
-                info_label = DomainLabelItem(info_text, font_size=8, color_hex="#8a8a8a", is_italic=True)
-                il_w = info_label.boundingRect().width()
-                info_label.set_absolute_position(current_x + (column_width - il_w) / 2, current_y)
+                info_font = QFont("Arial", 8, QFont.Weight.Medium)
+                info_font.setItalic(True)
+                fm_info = QFontMetrics(info_font)
+
+                max_il_w = 0
+                for line in info_text.split("\n"):
+                    max_il_w = max(max_il_w, fm_info.horizontalAdvance(line))
+
+                info_label = DomainLabelItem(info_text, font_family="Arial", font_size=8, color_hex="#8a8a8a", is_italic=True)
+                info_label.set_absolute_position(current_x + (column_width - max_il_w) / 2, current_y)
                 self.scene.addItem(info_label)
 
                 current_y += 40 + 5
