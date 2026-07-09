@@ -44,6 +44,7 @@ class VasculumApp(QMainWindow):
         super().__init__()
         self.json_path = json_path
         self._json_title = json_title
+        self.year_map = {}  # Mapeo de año -> (x, y) para los Ribbons
         self.setWindowTitle("Visor de infraestrucutra de dominios")
         self.setStyleSheet("background-color: #1e1e1e; color: #ffffff;")
         self.init_ui()
@@ -219,6 +220,9 @@ class VasculumApp(QMainWindow):
             if sd and sd not in unique_superdomains:
                 unique_superdomains.append(sd)
 
+        # Limpiar el mapa de años antes de renderizar (Paso 2 de Fase 2)
+        self.year_map = {}
+
         for i, sd in enumerate(unique_superdomains):
             # Si es parcial, solo procesamos el primer superdomain
             if partial and i > 0:
@@ -271,8 +275,10 @@ class VasculumApp(QMainWindow):
                 years_count = self._range_year_count(block.get("range", ""))
                 try:
                     start_year, end_year = map(int, block["range"].split("-"))
-                    years_text = "\n".join(str(y) for y in range(start_year, end_year + 1))
+                    year_list = list(range(start_year, end_year + 1))
+                    years_text = "\n".join(str(y) for y in year_list)
                 except Exception:
+                    year_list = []
                     years_text = block.get("range", "Error")
 
                 block_h = (years_count * 15) + 16
@@ -289,6 +295,19 @@ class VasculumApp(QMainWindow):
                 years_label = DomainLabelItem(years_text, font_family="Arial", font_size=10)
                 years_label.set_absolute_position(current_x + (column_width - max_yl_w) / 2, current_y + 8)
                 self.scene.addItem(years_label)
+
+                # --- Cálculo de coordenadas para el year_map (Paso 2 de Fase 2) ---
+                # Cada año ocupa exactamente 15px de alto en el texto.
+                # El punto central (x, y) de cada año es:
+                # x: centro horizontal del dominio
+                # y: current_y + padding_top(8) + (index * line_height) + (line_height / 2)
+                center_x = current_x + (column_width / 2)
+                padding_top = 8
+                line_height = 15
+
+                for idx, year in enumerate(year_list):
+                    year_y = current_y + padding_top + (idx * line_height) + (line_height / 2)
+                    self.year_map[year] = (center_x, year_y)
 
                 current_y += block_h + spacing_blocks
 
