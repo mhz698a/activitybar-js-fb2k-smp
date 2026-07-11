@@ -5,6 +5,7 @@ from domain_visor.layout_engine import LayoutEngine
 from domain_visor.superdomain_item import SuperDomainItem
 from domain_visor.domain_item import DomainItem
 from domain_visor.year_item import YearItem
+from domain_visor.cable_item import CableItem
 
 class RenderEngine:
     """
@@ -32,6 +33,7 @@ class RenderEngine:
 
         # 4. Crear los GraphicsItems y agregarlos a la escena (Geometry -> GraphicsItems -> Scene)
         domain_items_map = {}
+        all_year_items = []
 
         # 4.1. Instanciar SuperDomainItems
         for sd, geom in layout_data["superdomains"].items():
@@ -61,7 +63,7 @@ class RenderEngine:
             dom_item = domain_items_map.get(parent_domain)
 
             # Instanciar el año, el cual creará automáticamente sus puertos
-            YearItem(
+            y_item = YearItem(
                 x=x,
                 y=y,
                 width=w,
@@ -69,6 +71,22 @@ class RenderEngine:
                 year_value=year.value,
                 parent=dom_item
             )
+            all_year_items.append(y_item)
+
+        # 4.4. Instanciar cables simulados de prueba (Commit 9)
+        year_2008_item = None
+        year_2015_item = None
+
+        for item in all_year_items:
+            if item._year_value == 2008:
+                year_2008_item = item
+            if item._year_value == 2015:
+                year_2015_item = item
+
+        # Si ambos años de prueba existen, conectamos el puerto derecho de 2008 al izquierdo de 2015
+        if year_2008_item and year_2015_item:
+            mock_cable = CableItem(year_2008_item.right_port, year_2015_item.left_port)
+            scene.addItem(mock_cable)
 
         # 5. Configurar SceneRect
         sx, sy, sw, sh = layout_data["scene_rect"]
