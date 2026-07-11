@@ -22,6 +22,36 @@ except Exception:
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # Soporte para exportación headless PNG de prueba (Commit 12.1)
+    if "--png_export" in sys.argv:
+        try:
+            idx = sys.argv.index("--png_export")
+            if idx + 1 < len(sys.argv):
+                export_path = sys.argv[idx + 1]
+
+                # Instanciar el visor sin mostrar la ventana (Headless)
+                window = VasculumApp(JSON_DOMAINS, CONTAINER_DOMAINS)
+
+                from PyQt6.QtGui import QImage, QPainter, QColor
+                from domain_visor.theme import Theme
+
+                rect = window.scene.sceneRect()
+                image = QImage(int(rect.width()), int(rect.height()), QImage.Format.Format_ARGB32)
+                image.fill(QColor(Theme.APP_BACKGROUND))
+
+                painter = QPainter(image)
+                window.scene.render(painter)
+                painter.end()
+
+                # Guardar en la ruta indicada
+                image.save(export_path)
+                print(f"Headless PNG export completed successfully to: {export_path}")
+                sys.exit(0)
+        except Exception as e:
+            print(f"Error during headless export: {str(e)}", file=sys.stderr)
+            sys.exit(1)
+
     try:
         app.setWindowIcon(QIcon(ICON_WIN))
     except Exception:

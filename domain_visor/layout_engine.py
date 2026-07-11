@@ -14,8 +14,8 @@ class LayoutEngine:
 
         # Constantes de columnas de SuperDomain
         self.column_width = 200.0
-        self.spacing_columns = 20.0
-        self.column_height = 450.0
+        self.spacing_columns = 40.0  # Calibrado: incrementado de 20.0 a 40.0 para mayor separación
+        self.column_height = 450.0  # Altura por defecto
 
         # Constantes de bloques de Domain y espaciado
         self.spacing_blocks = 15.0
@@ -37,6 +37,29 @@ class LayoutEngine:
                 "scene_rect": (x, y, w, h)
             }
         """
+        # Paso de Calibración (Commit 12.1):
+        # Primero, calculamos dinámicamente la altura necesaria para cada columna de SuperDomain,
+        # previniendo desbordamientos (overflows) si hay muchos dominios o años en una columna.
+        max_needed_height = self.column_height
+
+        for sd in container.superdomains:
+            # Espacio vertical inicial: 50px de espacio superior para el título de la columna
+            col_height = 50.0
+            for domain in sd.domains:
+                # Altura correcta del dominio considerando: encabezado (28px) + padding superior (8px)
+                # + (años * 15px) + padding inferior (8px)
+                years_count = len(domain.years)
+                domain_height = self.header_height + self.year_top_padding + (years_count * self.year_height) + self.year_top_padding
+                col_height += domain_height + self.spacing_blocks
+
+            # Dejamos un margen inferior de padding al final de la columna
+            col_height += 15.0
+            if col_height > max_needed_height:
+                max_needed_height = col_height
+
+        # Asignamos la altura de columna calculada dinámicamente
+        active_column_height = max_needed_height
+
         superdomains_geom = {}
         domains_geom = {}
         years_geom = {}
@@ -44,24 +67,23 @@ class LayoutEngine:
         for i, sd in enumerate(container.superdomains):
             sd_x = self.margin_left + i * (self.column_width + self.spacing_columns)
             sd_y = self.margin_top
-            superdomains_geom[sd] = (sd_x, sd_y, self.column_width, self.column_height)
+            superdomains_geom[sd] = (sd_x, sd_y, self.column_width, active_column_height)
 
             # Posicionar secuencialmente los DomainItems dentro de este contenedor de columna
             # Se deja un espacio vertical de 50px para el encabezado del SuperDomainItem
             current_y = sd_y + 50.0
 
             for domain in sd.domains:
-                # Altura de cada bloque calculada como: (cantidad de años * altura por año) + 16px de padding
+                # Altura calibrada del bloque de dominio
                 years_count = len(domain.years)
-                domain_height = (years_count * self.year_height) + 16.0
+                domain_height = self.header_height + self.year_top_padding + (years_count * self.year_height) + self.year_top_padding
 
                 dom_x = sd_x + 10.0
                 dom_y = current_y
                 dom_width = self.column_width - 20.0
                 domains_geom[domain] = (dom_x, dom_y, dom_width, domain_height)
 
-                # Posicionar YearItems (sus puertos se centran internamente)
-                # Se inicia por debajo de la línea divisora del encabezado (28px) más un padding superior de 8px
+                # Posicionar YearItems
                 year_start_y = dom_y + self.header_height + self.year_top_padding
                 for idx, year in enumerate(domain.years):
                     y_pos = year_start_y + idx * self.year_height
@@ -72,7 +94,7 @@ class LayoutEngine:
 
         # Dimensiones totales de la escena para el bounding box
         total_width = self.margin_left + len(container.superdomains) * (self.column_width + self.spacing_columns) + self.margin_left
-        total_height = self.margin_top + self.column_height + 50.0
+        total_height = self.margin_top + active_column_height + 50.0
         scene_rect = (0.0, 0.0, float(total_width), float(total_height))
 
         return {
