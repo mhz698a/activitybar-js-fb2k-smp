@@ -6,9 +6,29 @@ import sys
 import json
 import os
 import ctypes
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QMessageBox, QGraphicsView, QGraphicsScene
+)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QPainter, QFontMetrics
+
+from domain_item import DomainItem
+from domain_label_item import DomainLabelItem
+
+# --- ANÁLISIS DEL RENDERIZADOR ACTUAL (PASO 1) ---
+# Responsabilidades identificadas:
+# - Construcción de ventana: VasculumApp.__init__ e init_ui.
+# - Renderizado: Actualmente NO usa paintEvent. Usa QLabels en layouts.
+# - Cálculos de geometría (Layout-based):
+#   - Márgenes: main_layout(30, 20, 30, 30).
+#   - Espaciado: main(15), columnas(20), bloques(8).
+#   - Título principal: Arial 18 Bold, centrado.
+#   - Columnas: Título (Arial 11 Bold) + Código (Consolas 10).
+#   - Bloques: Fondo según deuterodomain (#b93a82 o #6a329f), Arial 10.
+#   - Subetiquetas: Arial 8 Italic.
+# - Carga de datos: load_json_data() carga desde domains.json.
+# --------------------------------------------------
 
 APP_DIR = Path(__file__).resolve().parent.as_posix()
 ICON_WIN = f"{APP_DIR}/assets/online.ico"
@@ -44,24 +64,85 @@ class VasculumApp(QMainWindow):
         # Validar si el archivo realmente existe en el disco
         if not os.path.exists(self._json_title):
             return "Contenedor Desconocido"
-            
+
         try:
             # Abrir y cargar el archivo JSON de manera segura
             with open(self._json_title, 'r', encoding='utf-8') as f:
                 data = json.load(f)  # Se usa json.load() para archivos, no loads()
-            
+
             # Validar que la lista no esté vacía y extraer el título
             if isinstance(data, list) and len(data) > 0:
                 return (data[0].get("title_container", "Sin Título")).replace("_", " ").title()
-            
+
             return "Estructura JSON Inválida"
-            
+
         except Exception:
             return "Error al leer título"
-            
+
     def _range_year_count(self, range_text: str) -> int:
-        start_year, end_year = map(int, range_text.split("-"))
-        return end_year - start_year + 1
+        try:
+            start_year, end_year = map(int, range_text.split("-"))
+            return end_year - start_year + 1
+        except Exception:
+            return 0
+
+    def calculate_scene_rect(self):
+        """
+        Calcula el tamaño lógico del diagrama (Paso 4).
+        Basado en el análisis del renderizador antiguo:
+        - Márgenes: 30 (L), 20 (T), 30 (R), 30 (B).
+        - Espaciado título principal: 15 (espacio) + ~30 (altura título) + 10 (padding-bottom).
+        - Espaciado entre columnas: 20.
+        - Espaciado interno columna: 8.
+        """
+        margin_left = 30
+        margin_top = 20
+        margin_right = 30
+        margin_bottom = 30
+        spacing_main = 15
+        spacing_columns = 20
+        spacing_blocks = 8
+
+        # Título principal (~18pt + padding)
+        title_height = 40
+
+        # Superdomains (columnas)
+        unique_superdomains = []
+        for item in self.json_data:
+            sd = item.get("superdomain", "")
+            if sd and sd not in unique_superdomains:
+                unique_superdomains.append(sd)
+
+        num_columns = len(unique_superdomains)
+        column_width = 200 # Ancho aproximado para el cálculo lógico inicial
+
+        total_width = margin_left + margin_right + (num_columns * column_width) + (max(0, num_columns - 1) * spacing_columns)
+
+        # Altura máxima de columna
+        max_col_height = 0
+        for sd in unique_superdomains:
+            col_height = 0
+            # Meta code label (~10pt + padding)
+            col_height += 30 + spacing_blocks
+            # Title col label (~11pt + padding)
+            col_height += 35 + 10 + spacing_blocks
+
+            blocks = [b for b in self.json_data if b.get("superdomain") == sd]
+            for block in blocks:
+                # Bloque de años (Arial 10, ~15px por línea)
+                years = self._range_year_count(block.get("range", ""))
+                block_content_height = (years * 15) + 16 # padding
+                col_height += block_content_height + spacing_blocks
+
+                # Subetiqueta (~8pt, 2 líneas + padding)
+                col_height += 40 + 5 # padding-bottom
+
+            if col_height > max_col_height:
+                max_col_height = col_height
+
+        total_height = margin_top + title_height + spacing_main + max_col_height + margin_bottom
+
+        return 0, 0, total_width, total_height
 
     def build_superdomain_metadata(self, json_data, unique_superdomains):
         """
@@ -72,7 +153,7 @@ class VasculumApp(QMainWindow):
         d = años de cada bloque, marcando el segundo con paréntesis
         z = diferencia contra el primer superdomain
         """
-        
+
         meta = {}
         first_total = None
 
@@ -105,120 +186,166 @@ class VasculumApp(QMainWindow):
             }
 
         return meta
-    
+
+    def render_scene(self, partial=False):
+        """
+        Realiza el renderizado de la escena (Pasos 7, 8, 9, 10).
+        Centraliza cálculos geométricos usando QFontMetrics.
+        """
+        margin_left = 30
+        margin_top = 20
+        spacing_main = 15
+        spacing_columns = 20
+        spacing_blocks = 8
+        column_width = 200
+
+        # Título General
+        title_text = self.get_containter_title()
+        title_font = QFont("Arial", 18, QFont.Weight.Bold)
+        fm_title = QFontMetrics(title_font)
+        title_w = fm_title.horizontalAdvance(title_text)
+        title_h = fm_title.height()
+
+        title_item = DomainLabelItem(title_text, font_family="Arial", font_size=18, is_bold=True)
+        scene_w = self.scene.sceneRect().width()
+        title_item.set_absolute_position((scene_w - title_w) / 2, margin_top)
+        self.scene.addItem(title_item)
+
+        y_start_columns = margin_top + title_h + 10 + spacing_main
+
+        unique_superdomains = []
+        for item in self.json_data:
+            sd = item.get("superdomain", "")
+            if sd and sd not in unique_superdomains:
+                unique_superdomains.append(sd)
+
+        for i, sd in enumerate(unique_superdomains):
+            # Si es parcial, solo procesamos el primer superdomain
+            if partial and i > 0:
+                break
+
+            current_x = margin_left + i * (column_width + spacing_columns)
+            current_y = y_start_columns
+
+            meta = self.superdomain_meta.get(sd, {"code": "[?]", "title": sd})
+
+            # Celda Código
+            code_font = QFont("Consolas", 10)
+            fm_code = QFontMetrics(code_font)
+            cl_w = fm_code.horizontalAdvance(meta["code"])
+
+            code_item = DomainItem((current_x, current_y, column_width, 30), "#2d2d2d", border_color_hex="#444444", border_width=1)
+            self.scene.addItem(code_item)
+            code_label = DomainLabelItem(meta["code"], font_family="Consolas", font_size=10, color_hex="#b0b0b0")
+            code_label.set_absolute_position(current_x + (column_width - cl_w) / 2, current_y + 5)
+            self.scene.addItem(code_label)
+
+            current_y += 30 + spacing_blocks
+
+            # Celda Título Columna
+            title_col_font = QFont("Arial", 11, QFont.Weight.Bold)
+            fm_tcol = QFontMetrics(title_col_font)
+            tcl_w = fm_tcol.horizontalAdvance(meta["title"])
+
+            title_col_item = DomainItem((current_x, current_y, column_width, 35), "#2d2d2d", border_color_hex="#444444", border_width=1)
+            self.scene.addItem(title_col_item)
+            title_col_label = DomainLabelItem(meta["title"], font_family="Arial", font_size=11, is_bold=True)
+            title_col_label.set_absolute_position(current_x + (column_width - tcl_w) / 2, current_y + 8)
+            self.scene.addItem(title_col_label)
+
+            current_y += 35 + 10
+
+            blocks = [b for b in self.json_data if b.get("superdomain") == sd]
+            for j, block in enumerate(blocks):
+                # Si es parcial, solo procesamos el primer bloque
+                if partial and j > 0:
+                    break
+
+                if block.get("exodomain") == "aurora_maya":
+                    bg = "#2b73d6"  # Azul (exodominios / dominios terciarios)
+                elif block.get("deuterodomain") == "alejandra_maya":
+                    bg = "#b93a82"  # Rosa/Magenta
+                else:
+                    bg = "#7c3ab9"  # Morado/Púrpura
+
+                years_count = self._range_year_count(block.get("range", ""))
+                try:
+                    start_year, end_year = map(int, block["range"].split("-"))
+                    years_text = "\n".join(str(y) for y in range(start_year, end_year + 1))
+                except Exception:
+                    years_text = block.get("range", "Error")
+
+                block_h = (years_count * 15) + 16
+                domain_item = DomainItem((current_x, current_y, column_width, block_h), bg)
+                self.scene.addItem(domain_item)
+
+                # Texto años (Arial 10)
+                years_font = QFont("Arial", 10)
+                fm_years = QFontMetrics(years_font)
+                max_yl_w = 0
+                for line in years_text.split("\n"):
+                    max_yl_w = max(max_yl_w, fm_years.horizontalAdvance(line))
+
+                years_label = DomainLabelItem(years_text, font_family="Arial", font_size=10)
+                years_label.set_absolute_position(current_x + (column_width - max_yl_w) / 2, current_y + 8)
+                self.scene.addItem(years_label)
+
+                current_y += block_h + spacing_blocks
+
+                # Subetiqueta (Arial 8 Italic)
+                domain_title = block.get("domain", "").replace("_", " ").title()
+                info_text = f"{domain_title}\n({block.get('range', '')})"
+                info_font = QFont("Arial", 8, QFont.Weight.Medium)
+                info_font.setItalic(True)
+                fm_info = QFontMetrics(info_font)
+
+                max_il_w = 0
+                for line in info_text.split("\n"):
+                    max_il_w = max(max_il_w, fm_info.horizontalAdvance(line))
+
+                info_label = DomainLabelItem(info_text, font_family="Arial", font_size=8, color_hex="#8a8a8a", is_italic=True)
+                info_label.set_absolute_position(current_x + (column_width - max_il_w) / 2, current_y)
+                self.scene.addItem(info_label)
+
+                current_y += 40 + 5
+
     def init_ui(self):
         # 1. Cargar datos frescos del archivo
-        json_data = self.load_json_data()
-        if not json_data:
+        self.json_data = self.load_json_data()
+        if not self.json_data:
             sys.exit(1)
 
-        # Contenedor e interfaz principal
-        main_widget = QWidget()
-        main_layout = QVBoxLayout(main_widget)
-        main_layout.setContentsMargins(30, 20, 30, 30)
-        main_layout.setSpacing(15)
-
-        # Título General Estático
-        title_label = QLabel(self.get_containter_title())
-        title_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("color: #ffffff; padding-bottom: 10px;")
-        main_layout.addWidget(title_label)
-
-        # Layout Horizontal para las Columnas generadas dinámicamente
-        columns_layout = QHBoxLayout()
-        columns_layout.setSpacing(20)
-
-        # 2. Descubrir columnas únicas presentes en el archivo JSON (mantiene el orden de aparición)
-        unique_superdomains = []        
-        for item in json_data:
+        # 2. Preparar metadatos (necesarios para futuros pasos de renderizado)
+        unique_superdomains = []
+        for item in self.json_data:
             s_domain = item.get("superdomain", "")
             if s_domain and s_domain not in unique_superdomains:
                 unique_superdomains.append(s_domain)
-        
-        superdomain_meta = self.build_superdomain_metadata(json_data, unique_superdomains)
 
-        # 3. Construir cada columna iterando sobre el JSON estructurado
-        for col_key in unique_superdomains:
-            meta = superdomain_meta.get(col_key, {
-                "title": col_key.replace("_", " ").title(),
-                "code": "[t0][e0][d:?][z0]"
-            })
-            
-            col_widget = QWidget()
-            col_layout = QVBoxLayout(col_widget)
-            col_layout.setContentsMargins(0, 0, 0, 0)
-            col_layout.setSpacing(8)
-            col_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.superdomain_meta = self.build_superdomain_metadata(self.json_data, unique_superdomains)
 
-            # Celda con Código Técnico
-            code_label = QLabel(meta["code"])
-            code_label.setFont(QFont("Consolas", 10))
-            code_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            code_label.setStyleSheet("""
-                background-color: #2d2d2d; 
-                color: #b0b0b0; 
-                border: 1px solid #444444; 
-                padding: 6px;
-            """)
-            col_layout.addWidget(code_label)
+        # 3. Configurar QGraphicsView como widget central (Paso 2)
+        self.view = QGraphicsView()
+        self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.view.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        self.view.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        self.view.setFrameShape(QGraphicsView.Shape.NoFrame)
+        self.view.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.view.setBackgroundBrush(QBrush(QColor("#1e1e1e")))
+        self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
 
-            # Celda con Título de Columna
-            title_col_label = QLabel(meta["title"])
-            title_col_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
-            title_col_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            title_col_label.setStyleSheet("""
-                background-color: #2d2d2d; 
-                color: #ffffff; 
-                border: 1px solid #444444; 
-                padding: 8px;
-            """)
-            col_layout.addWidget(title_col_label)
-            col_layout.addSpacing(10)
+        # 4. Crear la escena y asignarla al View (Paso 3)
+        self.scene = QGraphicsScene()
+        self.view.setScene(self.scene)
 
-            # 4. Filtrar y pintar los bloques de años que pertenecen a esta columna exacta
-            blocks = [b for b in json_data if b.get("superdomain") == col_key]
-            for block in blocks:
-                # Lógica dinámica del color basada en deuterodomain
-                if block.get("deuterodomain") == "alejandra_maya":
-                    bg_color = "#b93a82"  # Rosa/Magenta
-                else:
-                    bg_color = "#6a329f"  # Morado/Púrpura
+        # 5. Calcular SceneRect (Paso 4)
+        rect = self.calculate_scene_rect()
+        self.scene.setSceneRect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
 
-                # Parsing dinámico del rango numérico ("AAAA-AAAA")
-                try:
-                    start_year, end_year = map(int, block["range"].split("-"))
-                    years_list = [str(y) for y in range(start_year, end_year + 1)]
-                    years_text = "\n".join(years_list)
-                except Exception:
-                    years_text = block.get("range", "Error Rango")
+        # 6. Renderizado (Pasos 7, 8, 9)
+        self.render_scene(partial=False)
 
-                # Pintar Bloque de Años
-                block_label = QLabel(years_text)
-                block_label.setFont(QFont("Arial", 10))
-                block_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                block_label.setStyleSheet(f"""
-                    background-color: {bg_color}; 
-                    color: #ffffff; 
-                    border: 1.5px solid #ffffff; 
-                    border-radius: 2px;
-                    padding: 8px 0px;
-                """)
-                col_layout.addWidget(block_label)
-
-                # Pintar Subetiqueta informativa inferior del bloque
-                domain_raw = block.get("domain", "")
-                domain_title = domain_raw.replace("_", " ").title()
-                info_label = QLabel(f"{domain_title}\n({block.get('range', '')})")
-                info_label.setFont(QFont("Arial", 8, QFont.Weight.Medium, italic=True))
-                info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                info_label.setStyleSheet("color: #8a8a8a; padding-bottom: 5px;")
-                col_layout.addWidget(info_label)
-
-            columns_layout.addWidget(col_widget)
-
-        main_layout.addLayout(columns_layout)
-        self.setCentralWidget(main_widget)
+        self.setCentralWidget(self.view)
         self.setMinimumSize(850, 650)
 
 if __name__ == "__main__":
@@ -227,7 +354,7 @@ if __name__ == "__main__":
         app.setWindowIcon(QIcon(ICON_WIN))
     except Exception:
         pass
-    
+
     window = VasculumApp(JSON_DOMAINS, CONTAINER_DOMAINS)
     window.show()
     sys.exit(app.exec())
