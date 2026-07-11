@@ -6,10 +6,7 @@ from PyQt6.QtWidgets import QMainWindow, QMessageBox, QGraphicsView, QGraphicsSc
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QBrush, QColor, QPainter
 
-from domain_visor.models import load_from_json
-from domain_visor.superdomain_item import SuperDomainItem
-from domain_visor.domain_item import DomainItem
-from domain_visor.year_item import YearItem
+from domain_visor.render_engine import RenderEngine
 
 class VasculumApp(QMainWindow):
     def __init__(self, json_path, json_title):
@@ -104,24 +101,7 @@ class VasculumApp(QMainWindow):
         return meta
 
     def init_ui(self):
-        # 1. Cargar datos del modelo (Commit 4/5)
-        self.container = load_from_json(self.json_path, self._json_title)
-
-        # También preservamos json_data y superdomain_meta para compatibilidad histórica
-        self.json_data = self.load_json_data()
-        if not self.json_data:
-            import sys
-            sys.exit(1)
-
-        unique_superdomains = []
-        for item in self.json_data:
-            s_domain = item.get("superdomain", "")
-            if s_domain and s_domain not in unique_superdomains:
-                unique_superdomains.append(s_domain)
-
-        self.superdomain_meta = self.build_superdomain_metadata(self.json_data, unique_superdomains)
-
-        # 2. Configurar QGraphicsView como widget central
+        # 1. Configurar QGraphicsView como widget central
         self.view = QGraphicsView()
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.view.setRenderHint(QPainter.RenderHint.TextAntialiasing)
@@ -131,68 +111,14 @@ class VasculumApp(QMainWindow):
         self.view.setBackgroundBrush(QBrush(QColor("#1e1e1e")))
         self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
 
-        # 3. Crear la escena y asignarla al View
+        # 2. Crear la escena y asignarla al View
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
 
-        # 4. Instanciar y agregar SuperDomainItems y sus correspondientes DomainItems/YearItems
-        margin_left = 30
-        margin_top = 40
-        column_width = 200
-        spacing_columns = 20
-        column_height = 450
-        spacing_blocks = 15
+        # 3. Instanciar RenderEngine para delegar el renderizado (Commit 7)
+        self.render_engine = RenderEngine()
+        self.render_engine.render(self.scene, self._json_title, self.json_path)
 
-        for i, sd in enumerate(self.container.superdomains):
-            x = margin_left + i * (column_width + spacing_columns)
-            y = margin_top
-
-            # Instanciar el SuperDomainItem contenedor
-            sd_item = SuperDomainItem(x, y, column_width, column_height, sd.title)
-            self.scene.addItem(sd_item)
-
-            # Posicionar los DomainItems secuencialmente dentro de esta columna
-            current_y = y + 50  # Deja espacio para el título del SuperDomainItem
-
-            for domain in sd.domains:
-                # Altura de cada bloque de dominio basada en la cantidad de años en el modelo
-                years_count = len(domain.years)
-                domain_height = (years_count * 15) + 16
-
-                # Instanciar DomainItem dentro de la columna
-                dom_item = DomainItem(
-                    x=x + 10,  # 10px de margen a la izquierda dentro de la columna
-                    y=current_y,
-                    width=column_width - 20,  # 10px de margen a cada lado
-                    height=domain_height,
-                    title=domain.name,
-                    deuterodomain=domain.deuterodomain,
-                    exodomain=domain.exodomain
-                )
-                self.scene.addItem(dom_item)
-
-                # Instanciar YearItems como hijos de este DomainItem (Commit 5)
-                # El encabezado mide 28px de alto. Con un top padding de 8px empezamos en +36px
-                year_start_y = current_y + 36.0
-                for idx, year in enumerate(domain.years):
-                    y_pos = year_start_y + idx * 15.0
-                    YearItem(
-                        x=x + 10,
-                        y=y_pos,
-                        width=column_width - 20,
-                        height=15,
-                        year_value=year.value,
-                        parent=dom_item
-                    )
-
-                # Avanzar current_y para el próximo dominio en la columna
-                current_y += domain_height + spacing_blocks
-
-        # Configurar SceneRect para acomodar los ítems
-        total_width = margin_left + len(self.container.superdomains) * (column_width + spacing_columns) + margin_left
-        total_height = margin_top + column_height + 50
-        self.scene.setSceneRect(0, 0, total_width, total_height)
-
-        # 5. Configurar vista central y tamaño mínimo
+        # 4. Configurar vista central y tamaño mínimo
         self.setCentralWidget(self.view)
         self.setMinimumSize(850, 650)
