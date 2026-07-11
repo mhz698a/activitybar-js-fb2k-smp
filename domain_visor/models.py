@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import json
 import os
 
-@dataclass
+@dataclass(eq=False)
 class Year:
     value: int
     parent_domain: any = None  # Referencia al objeto Domain padre
@@ -13,7 +13,7 @@ class Year:
         return f"Year({self.value})"
 
 
-@dataclass
+@dataclass(eq=False)
 class Domain:
     id: int
     name: str
@@ -28,7 +28,7 @@ class Domain:
         return f"Domain(id={self.id}, name={self.name}, range={self.range_text}, years_count={len(self.years)})"
 
 
-@dataclass
+@dataclass(eq=False)
 class SuperDomain:
     super_id: int
     name: str
@@ -39,7 +39,7 @@ class SuperDomain:
         return f"SuperDomain(id={self.super_id}, name={self.name}, title={self.title}, domains_count={len(self.domains)})"
 
 
-@dataclass
+@dataclass(eq=False)
 class Connection:
     from_year: int
     to_year: int
@@ -50,7 +50,7 @@ class Connection:
         return f"Connection(from={self.from_year}, to={self.to_year}, name={self.name}, type={self.type})"
 
 
-@dataclass
+@dataclass(eq=False)
 class Container:
     title: str
     superdomains: list[SuperDomain]
