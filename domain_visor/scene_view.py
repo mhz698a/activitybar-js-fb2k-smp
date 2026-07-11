@@ -9,6 +9,7 @@ from PyQt6.QtGui import QBrush, QColor, QPainter
 from domain_visor.models import load_from_json
 from domain_visor.superdomain_item import SuperDomainItem
 from domain_visor.domain_item import DomainItem
+from domain_visor.year_item import YearItem
 
 class VasculumApp(QMainWindow):
     def __init__(self, json_path, json_title):
@@ -103,7 +104,7 @@ class VasculumApp(QMainWindow):
         return meta
 
     def init_ui(self):
-        # 1. Cargar datos del modelo (Commit 4)
+        # 1. Cargar datos del modelo (Commit 4/5)
         self.container = load_from_json(self.json_path, self._json_title)
 
         # También preservamos json_data y superdomain_meta para compatibilidad histórica
@@ -134,7 +135,7 @@ class VasculumApp(QMainWindow):
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
 
-        # 4. Instanciar y agregar SuperDomainItems y sus correspondientes DomainItems
+        # 4. Instanciar y agregar SuperDomainItems y sus correspondientes DomainItems/YearItems
         margin_left = 30
         margin_top = 40
         column_width = 200
@@ -169,6 +170,20 @@ class VasculumApp(QMainWindow):
                     exodomain=domain.exodomain
                 )
                 self.scene.addItem(dom_item)
+
+                # Instanciar YearItems como hijos de este DomainItem (Commit 5)
+                # El encabezado mide 28px de alto. Con un top padding de 8px empezamos en +36px
+                year_start_y = current_y + 36.0
+                for idx, year in enumerate(domain.years):
+                    y_pos = year_start_y + idx * 15.0
+                    YearItem(
+                        x=x + 10,
+                        y=y_pos,
+                        width=column_width - 20,
+                        height=15,
+                        year_value=year.value,
+                        parent=dom_item
+                    )
 
                 # Avanzar current_y para el próximo dominio en la columna
                 current_y += domain_height + spacing_blocks
