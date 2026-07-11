@@ -4,24 +4,26 @@ from domain_visor.models import load_from_json
 from domain_visor.layout_engine import LayoutEngine
 from domain_visor.color_resolver import ColorResolver
 from domain_visor.port_registry import PortRegistry
+from domain_visor.connection_engine import ConnectionEngine
 from domain_visor.superdomain_item import SuperDomainItem
 from domain_visor.domain_item import DomainItem
 from domain_visor.year_item import YearItem
-from domain_visor.cable_item import CableItem
 
 class RenderEngine:
     """
     Coordinador de renderizado puro (JSON -> Models -> GraphicsItems -> Scene).
-    Delega el cálculo de diseño al LayoutEngine, la resolución de color al ColorResolver
-    y la resolución de puertos lógicos/visuales al PortRegistry.
+    Delega el cálculo de diseño al LayoutEngine, la resolución de color al ColorResolver,
+    la resolución de puertos lógicos/visuales al PortRegistry y la creación de cables al ConnectionEngine.
     """
     def __init__(self):
         self.layout_engine = LayoutEngine()
+        self.connection_engine = ConnectionEngine()
 
     def render(self, scene, container_path, domains_path):
         """
         Limpia la escena, carga el modelo jerárquico, obtiene la geometría de LayoutEngine,
-        resuelve colores y puertos, e instancia todos los gráficos de forma dinámica.
+        resuelve colores y puertos, e instancia todos los gráficos de forma dinámica delegando
+        la resolución de cables al ConnectionEngine.
         """
         # 1. Limpiar escena e instanciar registro de puertos desacoplado
         scene.clear()
@@ -77,14 +79,8 @@ class RenderEngine:
             registry.register_port(year.value, "left", y_item.left_port)
             registry.register_port(year.value, "right", y_item.right_port)
 
-        # 5. Renderizar cables de forma 100% dinámica mediante el PortRegistry y container.connections
-        for connection in container.connections:
-            from_port = registry.get_port(connection.from_year, "right")
-            to_port = registry.get_port(connection.to_year, "left")
-
-            if from_port and to_port:
-                cable = CableItem(from_port, to_port)
-                scene.addItem(cable)
+        # 5. Renderizar cables delegando la resolución y dibujo al ConnectionEngine (Commit 10)
+        self.connection_engine.create_connections(scene, container.connections, registry)
 
         # 6. Configurar el tamaño del lienzo de la escena
         sx, sy, sw, sh = layout_data["scene_rect"]
