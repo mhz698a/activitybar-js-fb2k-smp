@@ -11,7 +11,7 @@ from domain_visor.scene_view import VasculumApp
 
 APP_DIR = Path(__file__).resolve().parent.as_posix()
 ICON_WIN = f"{APP_DIR}/assets/online.ico"
-JSON_DOMAINS = f"{APP_DIR}/__structure__/domains.json"
+JSON_DOMAINS = f"{APP_DIR}/__structure__/infrastructure.json"
 CONTAINER_DOMAINS = f"{APP_DIR}/__structure__/container.json"
 
 myappid = 'etudetools.year_struct.render_domains.1.0'

@@ -6,22 +6,23 @@ from PyQt6.QtWidgets import QGraphicsItem
 
 class DomainItem(QGraphicsItem):
     """
-    Representa un dominio o bloque en el diagrama (Paso de Commit 4).
+    Representa un elemento gráfico de dominio o bloque en el diagrama (Paso de Commit 9.1).
     Responsabilidades:
-    - Dibujar un contenedor con fondo de color según el rol del dominio.
+    - Dibujar un contenedor con fondo y borde recibidos de forma explícita.
     - Dibujar un encabezado con el título del dominio.
     - Dibujar una línea divisora horizontal a una altura fija de 28px.
-    - No mostrar años ni conexiones/cables (eso se agregará en commits posteriores).
+    - NO decidir colores basados en roles, modelos o lógicas del negocio.
+    - NO conocer clases de negocio o datos lógicos (como Domain o role).
     """
-    def __init__(self, x, y, width, height, title, deuterodomain="", exodomain=""):
+    def __init__(self, x, y, width, height, title, background_color: str, border_color: str):
         super().__init__()
         self._x = float(x)
         self._y = float(y)
         self._width = float(width)
         self._height = float(height)
         self._title = title
-        self._deuterodomain = deuterodomain
-        self._exodomain = exodomain
+        self._background_color = QColor(background_color)
+        self._border_color = QColor(border_color)
 
     def boundingRect(self) -> QRectF:
         # Retorna el área que cubre este ítem, incluyendo un pequeño margen para el borde
@@ -34,27 +35,16 @@ class DomainItem(QGraphicsItem):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
 
-        # Determinar el color de fondo según deuterodominio/exodominio
-        if self._exodomain == "aurora_maya":
-            bg_color = QColor("#2b73d6")  # Azul (exodominios / dominios terciarios)
-        elif self._deuterodomain == "alejandra_maya":
-            bg_color = QColor("#b93a82")  # Rosa/Magenta
-        else:
-            bg_color = QColor("#7c3ab9")  # Morado/Púrpura
-
-        border_color = QColor("#ffffff")  # Borde blanco según el estilo actual del visor
-
-        # 1. Dibujar el fondo y borde del bloque redondeado
+        # 1. Dibujar el fondo y borde del bloque redondeado usando los colores recibidos
         rect = QRectF(self._x, self._y, self._width, self._height)
-        painter.setBrush(QBrush(bg_color))
-        pen = QPen(border_color)
+        painter.setBrush(QBrush(self._background_color))
+        pen = QPen(self._border_color)
         pen.setWidthF(1.5)
         painter.setPen(pen)
         painter.drawRoundedRect(rect, 4.0, 4.0)
 
         # 2. Dibujar la línea divisora horizontal del encabezado a 28px de altura
         divider_y = self._y + 28.0
-        # Dibujamos una línea recta de borde a borde
         painter.drawLine(QLineF(self._x, divider_y, self._x + self._width, divider_y))
 
         # 3. Dibujar el título del dominio en el encabezado
@@ -62,7 +52,6 @@ class DomainItem(QGraphicsItem):
         painter.setFont(font)
         painter.setPen(QColor("#ffffff"))
 
-        # El rectángulo del encabezado va desde self._y hasta divider_y
         header_rect = QRectF(self._x, self._y, self._width, 28.0)
         formatted_title = self._title.replace("_", " ").title()
         painter.drawText(header_rect, Qt.AlignmentFlag.AlignCenter, formatted_title)

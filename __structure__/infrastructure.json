@@ -32,32 +32,32 @@
                 "range_type": "mesolazo_domain_to_domain"
             },
             {
-                "from": 2008, 
+                "from": 2008,
                 "to": 2015,
                 "range_name": "anhelos_de_princesa",
                 "range_type": "deuterolazo_de_andrea_cloe"
             },
             {
-                "from": 2008, 
+                "from": 2008,
                 "to": 2009,
                 "range_name": "mariposas_de_ximena",
                 "range_type": "mesolazo_domain_to_domain"
             },
             {
-                "from": 2011, 
+                "from": 2011,
                 "to": 2019,
                 "range_name": "renacida_de_flores_y_mares",
                 "range_type": "exolazo"
             },
             {
-                "from": 2011, 
+                "from": 2011,
                 "to": 2012,
                 "range_name": "quadragi_octava_de_olivia",
                 "range_type": "superlazo"
             }
         ]
-    }, 
-    {   
+    },
+    {
         "super_id": 2,
         "superdomain": "recognitio_de_rachel",
         "domains": [
@@ -85,31 +85,31 @@
         ],
         "connections": [
             {
-                "from": 2014, 
+                "from": 2014,
                 "to": 2015,
                 "range_name": "elizabeth_de_fernanda",
                 "range_type": "mesolazo_domain_to_domain"
             },
             {
-                "from": 2018, 
+                "from": 2018,
                 "to": 2026,
                 "range_name": "constellatio_reverie",
-                "range_type": "deuterolazo_de_andrea_cloe" 
+                "range_type": "deuterolazo_de_andrea_cloe"
             },
             {
-                "from": 2018, 
+                "from": 2018,
                 "to": 2019,
                 "range_name": "viginti_quattuor_isaline_de_fabiola",
                 "range_type": "mesolazo_domain_to_domain"
             },
             {
-                "from": 2022, 
+                "from": 2022,
                 "to": 2029,
                 "range_name": "amanecer_de_rosalia",
                 "range_type": "exolazo"
             },
             {
-                "from": 2022, 
+                "from": 2022,
                 "to": 2023,
                 "range_name": "amaryllis_de_evelyn",
                 "range_type": "superlazo"
@@ -144,19 +144,19 @@
         ],
         "connections": [
             {
-                "from": 2025, 
+                "from": 2025,
                 "to": 2026,
                 "range_name": "spatium_instructio_vitia_de_ingrid",
                 "range_type": "mesolazo_domain_to_domain"
             },
             {
-                "from": 2028, 
+                "from": 2028,
                 "to": 2029,
                 "range_name": "veinticinco_de_amalia",
                 "range_type": "mesolazo_domain_to_domain"
             },
             {
-                "from": 2032, 
+                "from": 2032,
                 "to": 2033,
                 "range_name": "triginta_unus_tres",
                 "range_type": "super_to_super"
