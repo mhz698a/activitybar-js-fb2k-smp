@@ -13,7 +13,7 @@ class Year:
 
 
 class Domain:
-    def __init__(self, name: str, range_text: str, start_year: int, end_year: int, years: list = None, role: str = "", norm_baas: str = ""):
+    def __init__(self, name: str, range_text: str, start_year: int, end_year: int, years: list = None, role: str = "", norm_baas: str = "", deuterodomain: str = "", exodomain: str = ""):
         self.name = name
         self.range_text = range_text
         self.start_year = start_year
@@ -21,6 +21,8 @@ class Domain:
         self.years = years if years is not None else []
         self.role = role
         self.norm_baas = norm_baas
+        self.deuterodomain = deuterodomain
+        self.exodomain = exodomain
 
     def __repr__(self):
         return f"Domain(name={self.name}, range={self.range_text}, years_count={len(self.years)})"
@@ -111,6 +113,10 @@ def load_from_json(domains_path: str, container_path: str) -> Container:
         role = item.get("role", "")
         norm_baas = item.get("norm_BaaS", item.get("norm_baas", ""))
 
+        # Extract deuterodomain and exodomain
+        deuterodomain = item.get("deuterodomain", "")
+        exodomain = item.get("exodomain", "")
+
         # Instantiate Domain (initially without years)
         domain_name = item.get("domain", "")
         domain_obj = Domain(
@@ -120,7 +126,9 @@ def load_from_json(domains_path: str, container_path: str) -> Container:
             end_year=end_year,
             years=[],
             role=role,
-            norm_baas=norm_baas
+            norm_baas=norm_baas,
+            deuterodomain=deuterodomain,
+            exodomain=exodomain
         )
 
         # Build Year objects and set their parent_domain reference

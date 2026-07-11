@@ -2,12 +2,13 @@
 
 from pathlib import Path
 import os
-import json
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QGraphicsView, QGraphicsScene
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QBrush, QColor, QPainter
 
+from domain_visor.models import load_from_json
 from domain_visor.superdomain_item import SuperDomainItem
+from domain_visor.domain_item import DomainItem
 
 class VasculumApp(QMainWindow):
     def __init__(self, json_path, json_title):
@@ -20,6 +21,7 @@ class VasculumApp(QMainWindow):
 
     def load_json_data(self):
         """Carga el archivo JSON de forma dinámica y maneja errores."""
+        import json
         if not os.path.exists(self.json_path):
             QMessageBox.critical(self, "Error", f"No se encontró el archivo: {self.json_path}")
             return []
@@ -31,6 +33,7 @@ class VasculumApp(QMainWindow):
             return []
 
     def get_containter_title(self) -> str:
+        import json
         # Validar si el archivo realmente existe en el disco
         if not os.path.exists(self._json_title):
             return "Contenedor Desconocido"
@@ -100,13 +103,15 @@ class VasculumApp(QMainWindow):
         return meta
 
     def init_ui(self):
-        # 1. Cargar datos frescos del archivo
+        # 1. Cargar datos del modelo (Commit 4)
+        self.container = load_from_json(self.json_path, self._json_title)
+
+        # También preservamos json_data y superdomain_meta para compatibilidad histórica
         self.json_data = self.load_json_data()
         if not self.json_data:
             import sys
             sys.exit(1)
 
-        # 2. Preparar metadatos (necesarios para futuros pasos de renderizado)
         unique_superdomains = []
         for item in self.json_data:
             s_domain = item.get("superdomain", "")
@@ -115,7 +120,7 @@ class VasculumApp(QMainWindow):
 
         self.superdomain_meta = self.build_superdomain_metadata(self.json_data, unique_superdomains)
 
-        # 3. Configurar QGraphicsView como widget central (Paso 2)
+        # 2. Configurar QGraphicsView como widget central
         self.view = QGraphicsView()
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.view.setRenderHint(QPainter.RenderHint.TextAntialiasing)
@@ -125,30 +130,54 @@ class VasculumApp(QMainWindow):
         self.view.setBackgroundBrush(QBrush(QColor("#1e1e1e")))
         self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
 
-        # 4. Crear la escena y asignarla al View (Paso 3)
+        # 3. Crear la escena y asignarla al View
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
 
-        # 5. Instanciar y agregar SuperDomainItems vacíos
+        # 4. Instanciar y agregar SuperDomainItems y sus correspondientes DomainItems
         margin_left = 30
         margin_top = 40
         column_width = 200
         spacing_columns = 20
         column_height = 450
+        spacing_blocks = 15
 
-        for i, sd in enumerate(unique_superdomains):
+        for i, sd in enumerate(self.container.superdomains):
             x = margin_left + i * (column_width + spacing_columns)
             y = margin_top
-            title = sd.replace("_", " ").title()
 
-            item = SuperDomainItem(x, y, column_width, column_height, title)
-            self.scene.addItem(item)
+            # Instanciar el SuperDomainItem contenedor
+            sd_item = SuperDomainItem(x, y, column_width, column_height, sd.title)
+            self.scene.addItem(sd_item)
+
+            # Posicionar los DomainItems secuencialmente dentro de esta columna
+            current_y = y + 50  # Deja espacio para el título del SuperDomainItem
+
+            for domain in sd.domains:
+                # Altura de cada bloque de dominio basada en la cantidad de años en el modelo
+                years_count = len(domain.years)
+                domain_height = (years_count * 15) + 16
+
+                # Instanciar DomainItem dentro de la columna
+                dom_item = DomainItem(
+                    x=x + 10,  # 10px de margen a la izquierda dentro de la columna
+                    y=current_y,
+                    width=column_width - 20,  # 10px de margen a cada lado
+                    height=domain_height,
+                    title=domain.name,
+                    deuterodomain=domain.deuterodomain,
+                    exodomain=domain.exodomain
+                )
+                self.scene.addItem(dom_item)
+
+                # Avanzar current_y para el próximo dominio en la columna
+                current_y += domain_height + spacing_blocks
 
         # Configurar SceneRect para acomodar los ítems
-        total_width = margin_left + len(unique_superdomains) * (column_width + spacing_columns) + margin_left
+        total_width = margin_left + len(self.container.superdomains) * (column_width + spacing_columns) + margin_left
         total_height = margin_top + column_height + 50
         self.scene.setSceneRect(0, 0, total_width, total_height)
 
-        # 6. Configurar vista central y tamaño mínimo
+        # 5. Configurar vista central y tamaño mínimo
         self.setCentralWidget(self.view)
         self.setMinimumSize(850, 650)
