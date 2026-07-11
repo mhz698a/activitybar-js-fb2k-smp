@@ -7,6 +7,8 @@ from PyQt6.QtWidgets import QMainWindow, QMessageBox, QGraphicsView, QGraphicsSc
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QBrush, QColor, QPainter
 
+from domain_visor.superdomain_item import SuperDomainItem
+
 class VasculumApp(QMainWindow):
     def __init__(self, json_path, json_title):
         super().__init__()
@@ -127,6 +129,26 @@ class VasculumApp(QMainWindow):
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
 
-        # 5. Configurar vista central y tamaño mínimo
+        # 5. Instanciar y agregar SuperDomainItems vacíos
+        margin_left = 30
+        margin_top = 40
+        column_width = 200
+        spacing_columns = 20
+        column_height = 450
+
+        for i, sd in enumerate(unique_superdomains):
+            x = margin_left + i * (column_width + spacing_columns)
+            y = margin_top
+            title = sd.replace("_", " ").title()
+
+            item = SuperDomainItem(x, y, column_width, column_height, title)
+            self.scene.addItem(item)
+
+        # Configurar SceneRect para acomodar los ítems
+        total_width = margin_left + len(unique_superdomains) * (column_width + spacing_columns) + margin_left
+        total_height = margin_top + column_height + 50
+        self.scene.setSceneRect(0, 0, total_width, total_height)
+
+        # 6. Configurar vista central y tamaño mínimo
         self.setCentralWidget(self.view)
         self.setMinimumSize(850, 650)
