@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QBrush, QColor, QPainter
 
+from domain_visor.theme import Theme
 from domain_visor.render_engine import RenderEngine
 
 class VasculumApp(QMainWindow):
@@ -17,7 +18,7 @@ class VasculumApp(QMainWindow):
         self.json_path = json_path
         self._json_title = json_title
         self.setWindowTitle("Visor de infraestructura de dominios")
-        self.setStyleSheet("background-color: #1e1e1e; color: #ffffff;")
+        self.setStyleSheet(f"background-color: {Theme.APP_BACKGROUND}; color: {Theme.TEXT_WHITE};")
         self.init_ui()
 
     def init_ui(self):
@@ -28,14 +29,14 @@ class VasculumApp(QMainWindow):
         self.view.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         self.view.setFrameShape(QGraphicsView.Shape.NoFrame)
         self.view.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.view.setBackgroundBrush(QBrush(QColor("#1e1e1e")))
+        self.view.setBackgroundBrush(QBrush(QColor(Theme.APP_BACKGROUND)))
         self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
 
         # 2. Crear la escena y asignarla al View
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
 
-        # 3. Instanciar RenderEngine para delegar el renderizado (Commit 9.1)
+        # 3. Instanciar RenderEngine para delegar el renderizado (Commit 9.1/11)
         self.render_engine = RenderEngine()
         self.render_engine.render(self.scene, self._json_title, self.json_path)
 

@@ -4,15 +4,18 @@ from PyQt6.QtCore import QRectF, Qt, QLineF
 from PyQt6.QtGui import QFont, QPen, QBrush, QColor, QPainter
 from PyQt6.QtWidgets import QGraphicsItem
 
+from domain_visor.theme import Theme
+
 class DomainItem(QGraphicsItem):
     """
-    Representa un elemento gráfico de dominio o bloque en el diagrama (Paso de Commit 9.1).
+    Representa un elemento gráfico de dominio o bloque en el diagrama (Paso de Commit 9.1 y 11).
     Responsabilidades:
     - Dibujar un contenedor con fondo y borde recibidos de forma explícita.
     - Dibujar un encabezado con el título del dominio.
     - Dibujar una línea divisora horizontal a una altura fija de 28px.
     - NO decidir colores basados en roles, modelos o lógicas del negocio.
     - NO conocer clases de negocio o datos lógicos (como Domain o role).
+    - Consumir las constantes del tema centralizado para la tipografía del encabezado.
     """
     def __init__(self, x, y, width, height, title, background_color: str, border_color: str):
         super().__init__()
@@ -47,10 +50,10 @@ class DomainItem(QGraphicsItem):
         divider_y = self._y + 28.0
         painter.drawLine(QLineF(self._x, divider_y, self._x + self._width, divider_y))
 
-        # 3. Dibujar el título del dominio en el encabezado
+        # 3. Dibujar el título del dominio en el encabezado usando el tema centralizado
         font = QFont("Arial", 10, QFont.Weight.Bold)
         painter.setFont(font)
-        painter.setPen(QColor("#ffffff"))
+        painter.setPen(QColor(Theme.TEXT_WHITE))
 
         header_rect = QRectF(self._x, self._y, self._width, 28.0)
         formatted_title = self._title.replace("_", " ").title()

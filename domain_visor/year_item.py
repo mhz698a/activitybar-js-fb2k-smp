@@ -5,16 +5,17 @@ from PyQt6.QtGui import QFont, QColor, QPainter
 from PyQt6.QtWidgets import QGraphicsItem
 
 from domain_visor.port_item import PortItem
+from domain_visor.theme import Theme
 
 class YearItem(QGraphicsItem):
     """
-    Representa un año individual dentro de un dominio (Paso de Commit 5 y 6).
+    Representa un año individual dentro de un dominio (Paso de Commit 5, 6 y 11).
     Responsabilidades:
     - Dibujar únicamente el número del año en paint().
     - Fondo transparente y sin bordes.
-    - Utilizar la fuente del visor actual (Arial 10) y texto blanco.
+    - Utilizar la fuente del visor actual (Arial 10) y texto del tema.
     - Heredar de QGraphicsItem y asociarse jerárquicamente a su DomainItem padre.
-    - Instanciar e incorporar dos puertos (PortItem) de conexión: izquierdo y derecho.
+    - Instanciar e incorporar dos puertos (PortItem) de conexión.
     """
     def __init__(self, x, y, width, height, year_value, parent=None):
         super().__init__(parent)
@@ -24,16 +25,15 @@ class YearItem(QGraphicsItem):
         self._height = float(height)
         self._year_value = year_value
 
-        # Instanciar puertos de conexión izquierdo y derecho (Commit 6)
-        # Diámetro de 8px, centrados verticalmente con el año (de altura 15px)
+        # Instanciar puertos de conexión izquierdo y derecho
         port_diameter = 8.0
         port_y = self._y + (self._height - port_diameter) / 2.0
 
-        # El puerto izquierdo se ubica cerca del borde izquierdo (ej. 4px de margen)
+        # El puerto izquierdo se ubica cerca del borde izquierdo
         left_port_x = self._x + 4.0
         self.left_port = PortItem(left_port_x, port_y, port_diameter, "left", parent=self)
 
-        # El puerto derecho se ubica cerca del borde derecho (ej. 12px de margen desde el final)
+        # El puerto derecho se ubica cerca del borde derecho
         right_port_x = self._x + self._width - 12.0
         self.right_port = PortItem(right_port_x, port_y, port_diameter, "right", parent=self)
 
@@ -48,10 +48,10 @@ class YearItem(QGraphicsItem):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
 
-        # Configurar fuente Arial 10, color blanco
+        # Configurar fuente Arial 10, color del tema centralizado
         font = QFont("Arial", 10)
         painter.setFont(font)
-        painter.setPen(QColor("#ffffff"))
+        painter.setPen(QColor(Theme.TEXT_WHITE))
 
         # Dibujar el año centrado en su rectángulo
         rect = QRectF(self._x, self._y, self._width, self._height)

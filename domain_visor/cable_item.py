@@ -4,14 +4,16 @@ from PyQt6.QtCore import QRectF, Qt, QPointF
 from PyQt6.QtGui import QPen, QColor, QPainterPath, QPainter
 from PyQt6.QtWidgets import QGraphicsPathItem
 
+from domain_visor.theme import Theme
+
 class CableItem(QGraphicsPathItem):
     """
-    Representa un cable de conexión S-shaped entre dos puertos (Paso de Commit 9).
+    Representa un cable de conexión S-shaped entre dos puertos (Paso de Commit 9/11).
     Responsabilidades:
     - Heredar de QGraphicsPathItem.
     - Recibir dos PortItem (from_port, to_port) en su constructor.
     - Calcular el camino curvo (cúbico Bézier) entre los centros de ambos puertos.
-    - Configurar un estilo de lápiz neutral de 2px.
+    - Configurar un estilo de lápiz neutral obteniendo el color desde Theme.
     """
     def __init__(self, from_port, to_port, parent=None):
         super().__init__(parent)
@@ -30,12 +32,10 @@ class CableItem(QGraphicsPathItem):
         en la escena de los centros de los puertos.
         """
         # 1. Calcular los centros de los círculos de puerto usando sus coordenadas absolutas
-        # (diámetro = 8, radio = 4.0)
         p1 = QPointF(self.from_port._x + 4.0, self.from_port._y + 4.0)
         p2 = QPointF(self.to_port._x + 4.0, self.to_port._y + 4.0)
 
         # 2. Determinar los puntos de control para la curva Bézier horizontal (S-shaped)
-        # Desfase horizontal sugerido de 50px según el lado por el que sale/entra el cable
         offset_from = 50.0 if self.from_port._side == "right" else -50.0
         offset_to = -50.0 if self.to_port._side == "left" else 50.0
 
@@ -49,8 +49,8 @@ class CableItem(QGraphicsPathItem):
 
         self.setPath(path)
 
-        # 4. Configurar el estilo del cable: color gris claro y 2px de espesor
-        pen = QPen(QColor("#d0d0d0"))
+        # 4. Configurar el estilo del cable usando el color centralizado de Theme
+        pen = QPen(QColor(Theme.CABLE_COLOR))
         pen.setWidthF(2.0)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)

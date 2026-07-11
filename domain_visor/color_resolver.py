@@ -1,26 +1,30 @@
 # domain_visor/color_resolver.py
 
+from domain_visor.theme import Theme
+
 class ColorResolver:
     """
     Responsabilidad única:
-    Convertir un `role` de dominio en colores visuales (fondo, borde) en formato hex.
+    Convertir un `role` de dominio en colores visuales (fondo, borde) en formato hex,
+    obteniendo los valores desde la clase central Theme.
 
     Reglas:
     - No debe importar PyQt6.
     - No debe conocer DomainItem.
     - No debe acceder a modelos.
-    - Debe contener únicamente reglas visuales de color.
+    - Debe contener únicamente reglas lógicas de mapeo visual.
     """
     @staticmethod
     def resolve_colors(role: str) -> tuple[str, str]:
-        # Borde blanco por defecto según el diseño actual del visor
-        border_color = "#ffffff"
+        # Obtener color de borde desde el tema centralizado
+        border_color = Theme.DOMAIN_BORDER
 
+        # Mapear roles lógicos a variables de colores del tema centralizado
         if role == "exodomain_aurora_maya":
-            bg_color = "#2b73d6"      # Azul
+            bg_color = Theme.ROLE_EXODOMAIN_BG
         elif role == "deuterodomain_alejandra_maya":
-            bg_color = "#b93a82"      # Rosa/Magenta
+            bg_color = Theme.ROLE_DEUTERODOMAIN_BG
         else:
-            bg_color = "#7c3ab9"      # Morado/Púrpura por defecto
+            bg_color = Theme.ROLE_DEFAULT_BG
 
         return bg_color, border_color

@@ -4,13 +4,16 @@ from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QFont, QPen, QBrush, QColor, QPainter
 from PyQt6.QtWidgets import QGraphicsItem
 
+from domain_visor.theme import Theme
+
 class SuperDomainItem(QGraphicsItem):
     """
-    Representa un contenedor de SuperDomain (Paso de Commit 3).
+    Representa un contenedor de SuperDomain (Paso de Commit 3/11).
     Responsabilidades:
     - Dibujar un rectángulo redondeado con borde y fondo.
     - Dibujar el título del SuperDomain.
     - No usar sub-elementos de texto (dibujar todo en paint()).
+    - Consumir todas las constantes de color desde la clase centralizada Theme.
     """
     def __init__(self, x, y, width, height, title):
         super().__init__()
@@ -34,9 +37,9 @@ class SuperDomainItem(QGraphicsItem):
         # Definir el rectángulo principal
         rect = QRectF(self._x, self._y, self._width, self._height)
 
-        # Configurar colores para el fondo y el borde
-        bg_color = QColor("#2d2d2d")
-        border_color = QColor("#444444")
+        # Configurar colores para el fondo y el borde desde Theme
+        bg_color = QColor(Theme.SUPERDOMAIN_BG)
+        border_color = QColor(Theme.SUPERDOMAIN_BORDER)
 
         painter.setBrush(QBrush(bg_color))
         pen = QPen(border_color)
@@ -46,10 +49,10 @@ class SuperDomainItem(QGraphicsItem):
         # Dibujar el rectángulo redondeado
         painter.drawRoundedRect(rect, 5.0, 5.0)
 
-        # Configurar la fuente para el título (Arial 11 Bold, color blanco)
+        # Configurar la fuente para el título (Arial 11 Bold, color blanco del tema)
         font = QFont("Arial", 11, QFont.Weight.Bold)
         painter.setFont(font)
-        painter.setPen(QColor("#ffffff"))
+        painter.setPen(QColor(Theme.TEXT_WHITE))
 
         # Dibujar el título centrado horizontalmente en la parte superior con un pequeño margen
         text_rect = QRectF(self._x, self._y + 12.0, self._width, 30.0)

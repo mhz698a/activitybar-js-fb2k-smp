@@ -4,12 +4,14 @@ from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QPen, QBrush, QColor, QPainter
 from PyQt6.QtWidgets import QGraphicsItem
 
+from domain_visor.theme import Theme
+
 class PortItem(QGraphicsItem):
     """
-    Representa un puerto de conexión (círculo) a los lados de un año (Paso de Commit 6).
+    Representa un puerto de conexión (círculo) a los lados de un año (Paso de Commit 6/11).
     Responsabilidades:
-    - Dibujar un círculo con fondo transparente y borde blanco de 8px de diámetro.
-    - Conocer su lado ("left" o "right") para referencias futuras de conexión.
+    - Dibujar un círculo con fondo transparente y borde definido en Theme de 8px de diámetro.
+    - Conocer su lado ("left" o "right") para referencias de conexión.
     - Heredar de QGraphicsItem y asociarse jerárquicamente a su YearItem padre.
     """
     def __init__(self, x, y, diameter, side, parent=None):
@@ -29,8 +31,8 @@ class PortItem(QGraphicsItem):
         # Activar suavizado para un círculo perfecto
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Configurar borde blanco y fondo transparente (sin pincel)
-        pen = QPen(QColor("#ffffff"))
+        # Configurar borde y fondo transparente (sin pincel) desde Theme
+        pen = QPen(QColor(Theme.PORT_BORDER))
         pen.setWidthF(1.5)
         painter.setPen(pen)
         painter.setBrush(QBrush(Qt.BrushStyle.NoBrush))
