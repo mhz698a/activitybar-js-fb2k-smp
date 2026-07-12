@@ -42,12 +42,12 @@ class ConnectionEngine:
                     to_port = right_to
 
                 if from_port and to_port:
-                    cable = CableItem(from_port, to_port)
+                    cable = CableItem(from_port, to_port, connection)
                     scene.addItem(cable)
             else:
                 # Respaldo clásico si no se encuentran ambos lados
                 from_port = registry.get_port(connection.from_year, "right")
                 to_port = registry.get_port(connection.to_year, "left")
                 if from_port and to_port:
-                    cable = CableItem(from_port, to_port)
+                    cable = CableItem(from_port, to_port, connection)
                     scene.addItem(cable)

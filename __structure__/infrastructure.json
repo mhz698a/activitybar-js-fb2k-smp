@@ -1,0 +1,51 @@
+[
+  {
+    "superdomain": "origines_de_natalia",
+    "super_id": 1,
+    "domains": [
+      {
+        "id": 1,
+        "domain": "concepcion_pregenesis",
+        "range": "1999-2003",
+        "role": "exodomain_aurora_maya",
+        "norm_baas": ""
+      },
+      {
+        "id": 2,
+        "domain": "genesis_de_natalia",
+        "range": "2004-2008",
+        "role": "deuterodomain_alejandra_maya",
+        "norm_baas": ""
+      }
+    ],
+    "connections": [
+      {
+        "from": 2001,
+        "to": 2005,
+        "range_name": "Conexion de Prueba 1",
+        "range_type": "typeA"
+      }
+    ]
+  },
+  {
+    "superdomain": "recognitio_de_rachel",
+    "super_id": 2,
+    "domains": [
+      {
+        "id": 3,
+        "domain": "hermandad_de_paulina",
+        "range": "2012-2014",
+        "role": "",
+        "norm_baas": ""
+      }
+    ],
+    "connections": [
+      {
+        "from": 2005,
+        "to": 2013,
+        "range_name": "Cable Principal",
+        "range_type": "typeB"
+      }
+    ]
+  }
+]
