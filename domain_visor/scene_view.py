@@ -17,7 +17,7 @@ class ZoomableGraphicsView(QGraphicsView):
         self.zoom_factor = 1.0
         self.min_zoom = 0.2
         self.max_zoom = 5.0
-
+        
         # Anclar el zoom en el centro de la vista
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
 
@@ -69,7 +69,7 @@ class VasculumApp(QMainWindow):
         super().__init__()
         self.json_path = json_path
         self._json_title = json_title
-        self.setWindowTitle("Visor de infraestructura de dominios")
+        self.setWindowTitle("Infraestructura de años, dominios y superdominios")
         self.setStyleSheet(f"background-color: {Theme.APP_BACKGROUND}; color: {Theme.TEXT_WHITE};")
         self.init_ui()
 
@@ -82,7 +82,7 @@ class VasculumApp(QMainWindow):
         self.view.setFrameShape(QGraphicsView.Shape.NoFrame)
         self.view.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.view.setBackgroundBrush(QBrush(QColor(Theme.APP_BACKGROUND)))
-
+        
         # Soportar arrastre directo estilo mano además de las barras de desplazamiento (Paso 2)
         self.view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
@@ -105,7 +105,7 @@ class VasculumApp(QMainWindow):
         # Atajos para Zoom In (Ctrl + + y Ctrl + =)
         self.shortcut_zoom_in_plus = QShortcut(QKeySequence("Ctrl++"), self)
         self.shortcut_zoom_in_plus.activated.connect(self.view.zoom_in)
-
+        
         self.shortcut_zoom_in_equal = QShortcut(QKeySequence("Ctrl+="), self)
         self.shortcut_zoom_in_equal.activated.connect(self.view.zoom_in)
 
