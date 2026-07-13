@@ -10,7 +10,7 @@ class LayoutEngine:
     def __init__(self):
         # Constantes de márgenes y geometría del lienzo
         self.margin_left = 100.0
-        self.margin_top = 100.0
+        self.margin_top = 40.0
         self.margin_right = 100.0
         self.margin_bottom = 100.0
 
@@ -126,7 +126,7 @@ class LayoutEngine:
             total_width = last_sd_right + self.margin_right
         else:
             total_width = self.margin_left + self.margin_right
-            
+
         total_height = self.margin_top + active_column_height + self.margin_bottom
         scene_rect = (0.0, 0.0, float(total_width), float(total_height))
 

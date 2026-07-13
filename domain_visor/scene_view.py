@@ -161,13 +161,12 @@ class VasculumApp(QMainWindow):
         # 7. Configurar vista central y tamaño mínimo, y restaurar estado de splitter
         self.setCentralWidget(self.splitter)
         self.setMinimumSize(1400, 700)
-        self.showMaximized()
 
         self.restore_splitter_state()
-        
+
         # Restaurar estado visible de la edición del JSON
         self.restore_editor_visible_state()
-        
+
         # Conectar el botón para mostrar/ocultar el editor
         self.view.toggle_button.clicked.connect(self.toggle_json_editor)
 
@@ -189,7 +188,7 @@ class VasculumApp(QMainWindow):
         self.editor_visible = not self.editor_visible
         self.json_panel.setVisible(self.editor_visible)
         self.settings.setValue("json_editor_visible", self.editor_visible)
-        
+
         btn_text = "◀" if self.editor_visible else "▶"
         self.view.toggle_button.setText(btn_text)
         self.view.update_button_position()

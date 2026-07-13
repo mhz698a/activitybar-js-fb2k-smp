@@ -29,8 +29,9 @@ class CableItem(QGraphicsPathItem):
         # Generar el camino inicial
         self.update_path()
 
-        # Configurar Tooltip y Habilitar Hover (Paso 3)
+        # Configurar Tooltip, Habilitar Hover y cursor de mano (Paso 3)
         self.setAcceptHoverEvents(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         if self.connection.name:
             tooltip_text = f"{self.connection.name} ({self.connection.from_year} → {self.connection.to_year})"
         else:
