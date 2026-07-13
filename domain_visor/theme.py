@@ -24,3 +24,4 @@ class Theme:
 
     # CableItem
     CABLE_COLOR = "#d0d0d0"
+    CABLE_SPECIAL_COLOR = "#ffffff"

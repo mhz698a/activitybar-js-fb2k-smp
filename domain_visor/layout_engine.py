@@ -18,12 +18,28 @@ class LayoutEngine:
         self.column_height = 450.0  # Altura por defecto
 
         # Constantes de bloques de Domain y espaciado
-        self.spacing_blocks = 15.0
+        self.spacing_blocks = 20.0  # Calibrado: Incrementado de 15.0 a 20.0 como estándar
+        self.spacing_special = 40.0 # Calibrado: 40px para cruces especiales de cables
         self.header_height = 28.0
 
         # Constantes de YearItem
         self.year_height = 15.0
         self.year_top_padding = 8.0
+
+    def _get_spacing_after_domain(self, domain_upper, domain_lower, connections):
+        """
+        Determina dinámicamente el espaciado entre dos dominios contiguos de la misma columna.
+        Si existe una conexión entre el último año de domain_upper y el primer año de domain_lower,
+        se retorna self.spacing_special (40px). De lo contrario, self.spacing_blocks (20px).
+        """
+        if not domain_upper.years or not domain_lower.years:
+            return self.spacing_blocks
+        u_last = domain_upper.years[-1].value
+        l_first = domain_lower.years[0].value
+        for conn in connections:
+            if (conn.from_year == u_last and conn.to_year == l_first) or (conn.from_year == l_first and conn.to_year == u_last):
+                return self.spacing_special
+        return self.spacing_blocks
 
     def calculate_layout(self, container):
         """
@@ -45,12 +61,17 @@ class LayoutEngine:
         for sd in container.superdomains:
             # Espacio vertical inicial: 50px de espacio superior para el título de la columna
             col_height = 50.0
-            for domain in sd.domains:
+            for idx, domain in enumerate(sd.domains):
                 # Altura correcta del dominio considerando: encabezado (28px) + padding superior (8px)
                 # + (años * 15px) + padding inferior (8px)
                 years_count = len(domain.years)
                 domain_height = self.header_height + self.year_top_padding + (years_count * self.year_height) + self.year_top_padding
-                col_height += domain_height + self.spacing_blocks
+
+                if idx < len(sd.domains) - 1:
+                    spacing = self._get_spacing_after_domain(domain, sd.domains[idx+1], container.connections)
+                else:
+                    spacing = self.spacing_blocks
+                col_height += domain_height + spacing
             
             # Dejamos un margen inferior de padding al final de la columna
             col_height += 15.0
@@ -73,7 +94,7 @@ class LayoutEngine:
             # Se deja un espacio vertical de 50px para el encabezado del SuperDomainItem
             current_y = sd_y + 50.0
 
-            for domain in sd.domains:
+            for idx, domain in enumerate(sd.domains):
                 # Altura calibrada del bloque de dominio
                 years_count = len(domain.years)
                 domain_height = self.header_height + self.year_top_padding + (years_count * self.year_height) + self.year_top_padding
@@ -85,12 +106,17 @@ class LayoutEngine:
 
                 # Posicionar YearItems
                 year_start_y = dom_y + self.header_height + self.year_top_padding
-                for idx, year in enumerate(domain.years):
-                    y_pos = year_start_y + idx * self.year_height
+                for idx_year, year in enumerate(domain.years):
+                    y_pos = year_start_y + idx_year * self.year_height
                     years_geom[year] = (dom_x, y_pos, dom_width, self.year_height)
 
+                if idx < len(sd.domains) - 1:
+                    spacing = self._get_spacing_after_domain(domain, sd.domains[idx+1], container.connections)
+                else:
+                    spacing = self.spacing_blocks
+
                 # Avanzar la coordenada Y para el siguiente bloque de dominio más el espacio entre bloques
-                current_y += domain_height + self.spacing_blocks
+                current_y += domain_height + spacing
 
         # Dimensiones totales de la escena para el bounding box
         total_width = self.margin_left + len(container.superdomains) * (self.column_width + self.spacing_columns) + self.margin_left

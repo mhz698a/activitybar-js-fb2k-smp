@@ -82,7 +82,7 @@ class RenderEngine:
             registry.register_port(year.value, "right", y_item.right_port)
 
         # 5. Renderizar cables delegando la resolución y dibujo al ConnectionEngine (Commit 10)
-        self.connection_engine.create_connections(scene, container.connections, registry)
+        self.connection_engine.create_connections(scene, container, registry)
 
         # 6. Configurar el tamaño del lienzo de la escena
         sx, sy, sw, sh = layout_data["scene_rect"]

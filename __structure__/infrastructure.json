@@ -24,6 +24,12 @@
         "to": 2005,
         "range_name": "Conexion de Prueba 1",
         "range_type": "typeA"
+      },
+      {
+        "from": 2003,
+        "to": 2004,
+        "range_name": "Conexion Especial",
+        "range_type": "mesolazo_domain_to_domain"
       }
     ]
   },
