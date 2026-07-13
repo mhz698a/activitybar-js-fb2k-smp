@@ -74,7 +74,7 @@ class VasculumApp(QMainWindow):
         self._json_title = json_title
         self.setWindowTitle("Infraestructura de años, dominios y superdominios")
         self.setStyleSheet(f"background-color: {Theme.APP_BACKGROUND}; color: {Theme.TEXT_WHITE};")
-
+        
         self.settings = QSettings("etudetools", "year_struct_vasculum")
         self.init_ui()
 
@@ -126,7 +126,7 @@ class VasculumApp(QMainWindow):
 
         # 7. Configurar vista central y tamaño mínimo, y restaurar estado de splitter
         self.setCentralWidget(self.splitter)
-        self.setMinimumSize(1000, 700)
+        self.setMinimumSize(1200, 700)
 
         self.restore_splitter_state()
 

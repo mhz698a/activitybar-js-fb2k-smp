@@ -72,10 +72,10 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
         super().__init__(parent)
         self.root_is_array = False
         self.setColumnCount(2)
-        self.setHeaderLabels(["Propiedad / Clave", "Valor"])
+        self.setHeaderLabels(["Propiedad", "Valor"])
         self.setAlternatingRowColors(True)
         self.itemChanged.connect(self.on_item_changed)
-
+        
         # Style tree widget to match the Theme
         self.setStyleSheet(f"""
             QTreeWidget {{
@@ -110,7 +110,7 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
         if not item:
             return False
         col = index.column()
-
+        
         # Col 0 (Key) editability
         if col == 0:
             parent = item.parent()
@@ -124,7 +124,7 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
         elif col == 1:
             if getattr(item, 'node_type', None) != JSONTreeItem.TYPE_PRIMITIVE:
                 return False
-
+                
         return super().edit(index, trigger, event)
 
     def on_item_changed(self, item, column):
@@ -134,7 +134,7 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
         self.blockSignals(True)
         self.clear()
         self.root_is_array = isinstance(data, list)
-
+        
         if isinstance(data, dict):
             for k, v in data.items():
                 self.addTopLevelItem(self._create_item(k, v))
@@ -143,7 +143,7 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
                 self.addTopLevelItem(self._create_item(idx, val))
         else:
             self.addTopLevelItem(self._create_item("", data))
-
+        
         self.expandAll()
         self.blockSignals(False)
 
@@ -214,7 +214,7 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
 
     def contextMenuEvent(self, event):
         item = self.itemAt(event.position().toPoint())
-
+        
         menu = QtWidgets.QMenu(self)
         menu.setStyleSheet(f"""
             QMenu {{
@@ -226,7 +226,7 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
                 background-color: #3e3e42;
             }}
         """)
-
+        
         act_add_kv = None
         act_add_obj = None
         act_add_list = None
@@ -318,7 +318,7 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
             self.addTopLevelItem(new_item)
             self.blockSignals(False)
             self.editItem(new_item, 0)
-
+            
         self.update_list_indices()
         self.json_changed.emit()
 
@@ -334,14 +334,14 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
         while new_key in existing_keys:
             new_key = f"nueva_clave_{counter}"
             counter += 1
-
+        
         new_val = self._default_value_for_type(node_type)
         new_item = JSONTreeItem(new_key, new_val, node_type, parent_item)
         new_item.setFlags(new_item.flags() | Qt.ItemFlag.ItemIsEditable)
         parent_item.addChild(new_item)
         parent_item.setExpanded(True)
         self.blockSignals(False)
-
+        
         self.editItem(new_item, 0)
         self.update_list_indices()
         self.json_changed.emit()
@@ -359,10 +359,10 @@ class JSONTreeWidget(QtWidgets.QTreeWidget):
         parent_item.addChild(new_item)
         parent_item.setExpanded(True)
         self.blockSignals(False)
-
+        
         if node_type == JSONTreeItem.TYPE_PRIMITIVE:
             self.editItem(new_item, 1)
-
+            
         self.update_list_indices()
         self.json_changed.emit()
 
@@ -395,21 +395,21 @@ class JSONEditorPanel(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setStyleSheet(f"background-color: #252526; color: {Theme.TEXT_WHITE};")
-
+        
         # Layout principal
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(5)
-
+        
         # Título
-        self.title_label = QtWidgets.QLabel("Estructura (infrastructure.json)")
+        self.title_label = QtWidgets.QLabel("Edicion de la Infrastructura")
         self.title_label.setStyleSheet("font-weight: bold; font-size: 13px; padding: 4px; color: #85c1e9;")
         layout.addWidget(self.title_label)
-
+        
         # Árbol
         self.tree = JSONTreeWidget(self)
         layout.addWidget(self.tree)
-
+        
         # Label de error
         self.error_label = QtWidgets.QLabel()
         self.error_label.setWordWrap(True)
