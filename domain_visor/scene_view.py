@@ -126,7 +126,7 @@ class VasculumApp(QMainWindow):
 
         # 7. Configurar vista central y tamaño mínimo, y restaurar estado de splitter
         self.setCentralWidget(self.splitter)
-        self.setMinimumSize(1200, 700)
+        self.setMinimumSize(1400, 700)
 
         self.restore_splitter_state()
 
