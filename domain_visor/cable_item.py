@@ -104,6 +104,9 @@ class CableItem(QGraphicsPathItem):
             elif self.connection.type == "deuterolazo_de_andrea_cloe":
                 color = Theme.CABLE_DEUTEROLAZO_COLOR
                 width = 4.0
+            elif self.connection.type == "superlazo":
+                color = Theme.CABLE_SUPERCABLE_COLOR
+                width = 4.5
             elif self.connection.type == "exolazo":
                 color = Theme.CABLE_EXOLAZO_COLOR
                 width = 4.0
