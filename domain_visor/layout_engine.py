@@ -14,7 +14,7 @@ class LayoutEngine:
 
         # Constantes de columnas de SuperDomain
         self.column_width = 200.0
-        self.spacing_columns = 40.0  # Calibrado: incrementado de 20.0 a 40.0 para mayor separación
+        self.spacing_columns = 80.0  # Calibrado: incrementado a 80.0 para doblar la separación entre columnas
         self.column_height = 450.0  # Altura por defecto
 
         # Constantes de bloques de Domain y espaciado
