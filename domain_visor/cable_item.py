@@ -58,19 +58,21 @@ class CableItem(QGraphicsPathItem):
             path = QPainterPath()
             path.moveTo(p_right_upper)
 
-            # Loop right and down to y_gap
-            c1_a = QPointF(p_right_upper.x() + 25.0, p_right_upper.y())
-            c1_b = QPointF(p_right_upper.x() + 25.0, y_gap - 10.0)
-            p_mid_right = QPointF(p_right_upper.x() + 25.0, y_gap)
+            # Loop right and down to y_gap with horizontal tangents (perfectly rounded)
+            # Bulges out to x + 35.0, then curves back to x + 15.0
+            c1_a = QPointF(p_right_upper.x() + 35.0, p_right_upper.y())
+            c1_b = QPointF(p_right_upper.x() + 35.0, y_gap)
+            p_mid_right = QPointF(p_right_upper.x() + 15.0, y_gap)
             path.cubicTo(c1_a, c1_b, p_mid_right)
 
             # Cross horizontally to the left side
-            p_mid_left = QPointF(p_left_lower.x() - 25.0, y_gap)
+            p_mid_left = QPointF(p_left_lower.x() - 15.0, y_gap)
             path.lineTo(p_mid_left)
 
-            # Loop down and right into p_left_lower
-            c2_a = QPointF(p_left_lower.x() - 25.0, y_gap + 10.0)
-            c2_b = QPointF(p_left_lower.x() - 25.0, p_left_lower.y())
+            # Loop down and right into p_left_lower with horizontal tangents (perfectly rounded)
+            # Curves from x - 15.0 to x - 35.0, then into the left port
+            c2_a = QPointF(p_left_lower.x() - 35.0, y_gap)
+            c2_b = QPointF(p_left_lower.x() - 35.0, p_left_lower.y())
             path.cubicTo(c2_a, c2_b, p_left_lower)
 
             self.setPath(path)
