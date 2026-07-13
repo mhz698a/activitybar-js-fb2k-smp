@@ -9,12 +9,12 @@ class LayoutEngine:
     """
     def __init__(self):
         # Constantes de márgenes y geometría del lienzo
-        self.margin_left = 30.0
+        self.margin_left = 100.0
         self.margin_top = 40.0
 
         # Constantes de columnas de SuperDomain
         self.column_width = 200.0
-        self.spacing_columns = 80.0  # Calibrado: incrementado a 80.0 para doblar la separación entre columnas
+        self.spacing_columns = 90.0  # Calibrado: incrementado de 20.0 a 40.0 para mayor separación
         self.column_height = 450.0  # Altura por defecto
 
         # Constantes de bloques de Domain y espaciado
@@ -66,7 +66,7 @@ class LayoutEngine:
                 # + (años * 15px) + padding inferior (8px)
                 years_count = len(domain.years)
                 domain_height = self.header_height + self.year_top_padding + (years_count * self.year_height) + self.year_top_padding
-
+                
                 if idx < len(sd.domains) - 1:
                     spacing = self._get_spacing_after_domain(domain, sd.domains[idx+1], container.connections)
                 else:

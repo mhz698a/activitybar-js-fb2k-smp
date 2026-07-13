@@ -4,7 +4,7 @@ from PyQt6.QtCore import QRectF, Qt, QPointF
 from PyQt6.QtGui import QPen, QColor, QPainterPath, QPainter, QPainterPathStroker
 from PyQt6.QtWidgets import QGraphicsPathItem
 
-from domain_visor.theme import Theme
+from domain_visor.theme import Theme # type: ignore
 
 class CableItem(QGraphicsPathItem):
     """
@@ -60,19 +60,19 @@ class CableItem(QGraphicsPathItem):
 
             # Loop right and down to y_gap with horizontal tangents (perfectly rounded)
             # Bulges out to x + 35.0, then curves back to x + 15.0
-            c1_a = QPointF(p_right_upper.x() + 35.0, p_right_upper.y())
-            c1_b = QPointF(p_right_upper.x() + 35.0, y_gap)
-            p_mid_right = QPointF(p_right_upper.x() + 15.0, y_gap)
+            c1_a = QPointF(p_right_upper.x() + 40.0, p_right_upper.y())
+            c1_b = QPointF(p_right_upper.x() + 40.0, y_gap)
+            p_mid_right = QPointF(p_right_upper.x() + 3.0, y_gap)
             path.cubicTo(c1_a, c1_b, p_mid_right)
 
             # Cross horizontally to the left side
-            p_mid_left = QPointF(p_left_lower.x() - 15.0, y_gap)
+            p_mid_left = QPointF(p_left_lower.x() - 3.0, y_gap)
             path.lineTo(p_mid_left)
 
             # Loop down and right into p_left_lower with horizontal tangents (perfectly rounded)
             # Curves from x - 15.0 to x - 35.0, then into the left port
-            c2_a = QPointF(p_left_lower.x() - 35.0, y_gap)
-            c2_b = QPointF(p_left_lower.x() - 35.0, p_left_lower.y())
+            c2_a = QPointF(p_left_lower.x() - 40.0, y_gap)
+            c2_b = QPointF(p_left_lower.x() - 40.0, p_left_lower.y())
             path.cubicTo(c2_a, c2_b, p_left_lower)
 
             self.setPath(path)
