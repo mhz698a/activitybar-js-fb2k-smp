@@ -11,6 +11,8 @@ class LayoutEngine:
         # Constantes de márgenes y geometría del lienzo
         self.margin_left = 100.0
         self.margin_top = 40.0
+        self.margin_right = 100.0
+        self.margin_bottom = 100.0
 
         # Constantes de columnas de SuperDomain
         self.column_width = 200.0
@@ -119,8 +121,13 @@ class LayoutEngine:
                 current_y += domain_height + spacing
 
         # Dimensiones totales de la escena para el bounding box
-        total_width = self.margin_left + len(container.superdomains) * (self.column_width + self.spacing_columns) + self.margin_left
-        total_height = self.margin_top + active_column_height + 50.0
+        if container.superdomains:
+            last_sd_right = self.margin_left + (len(container.superdomains) - 1) * (self.column_width + self.spacing_columns) + self.column_width
+            total_width = last_sd_right + self.margin_right
+        else:
+            total_width = self.margin_left + self.margin_right
+
+        total_height = self.margin_top + active_column_height + self.margin_bottom
         scene_rect = (0.0, 0.0, float(total_width), float(total_height))
 
         return {

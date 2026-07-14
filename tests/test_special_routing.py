@@ -103,3 +103,32 @@ class TestSpecialRouting(unittest.TestCase):
         # It should connect upper year's right port to lower year's left port
         self.assertEqual(cable.from_port, y_item_1.right_port)
         self.assertEqual(cable.to_port, y_item_2.left_port)
+
+    def test_cable_styles(self):
+        # Setup scene and registry
+        scene = QGraphicsScene()
+        registry = PortRegistry()
+
+        # Instantiate graphics items for the years so we can register their ports
+        dom_item_1 = DomainItem(0, 0, 100, 100, "dom1", "#ffffff", "#ffffff")
+        dom_item_2 = DomainItem(0, 150, 100, 100, "dom2", "#ffffff", "#ffffff")
+
+        y_item_1 = YearItem(0, 50, 100, 15, 2005, parent=dom_item_1)
+        y_item_2 = YearItem(0, 150, 100, 15, 2013, parent=dom_item_2)
+
+        registry.register_port(2005, "left", y_item_1.left_port)
+        registry.register_port(2005, "right", y_item_1.right_port)
+        registry.register_port(2013, "left", y_item_2.left_port)
+        registry.register_port(2013, "right", y_item_2.right_port)
+
+        # Test A: deuterolazo_de_andrea_cloe
+        conn_deuterolazo = Connection(from_year=2005, to_year=2013, name="Cable Deuterolazo", type="deuterolazo_de_andrea_cloe")
+        cable_deuterolazo = CableItem(y_item_1.right_port, y_item_2.left_port, conn_deuterolazo)
+        self.assertEqual(cable_deuterolazo.pen().color().name(), "#ff1493")
+        self.assertAlmostEqual(cable_deuterolazo.pen().widthF(), 4.0)
+
+        # Test B: exolazo
+        conn_exolazo = Connection(from_year=2005, to_year=2013, name="Cable Exolazo", type="exolazo")
+        cable_exolazo = CableItem(y_item_1.right_port, y_item_2.left_port, conn_exolazo)
+        self.assertEqual(cable_exolazo.pen().color().name(), "#00bfff")
+        self.assertAlmostEqual(cable_exolazo.pen().widthF(), 4.0)

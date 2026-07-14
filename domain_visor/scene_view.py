@@ -2,7 +2,7 @@
 
 import json
 import traceback
-from PyQt6.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QSplitter
+from PyQt6.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QSplitter, QPushButton
 from PyQt6.QtCore import Qt, QSettings, QByteArray
 from PyQt6.QtGui import QBrush, QColor, QPainter, QShortcut, QKeySequence
 
@@ -23,6 +23,39 @@ class ZoomableGraphicsView(QGraphicsView):
         
         # Anclar el zoom en el centro de la vista
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+
+        # Crear el botón flotante
+        self.toggle_button = QPushButton("◀", self)
+        self.toggle_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #555555;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #3e3e42;
+                border-color: #85c1e9;
+            }
+            QPushButton:pressed {
+                background-color: #1e1e1e;
+            }
+        """)
+        self.toggle_button.adjustSize()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_button_position()
+
+    def update_button_position(self):
+        if hasattr(self, 'toggle_button') and self.toggle_button:
+            x = 15
+            scrollbar_height = self.horizontalScrollBar().height() if self.horizontalScrollBar().isVisible() else 0
+            y = self.height() - self.toggle_button.height() - 15 - scrollbar_height
+            self.toggle_button.move(x, y)
 
     def wheelEvent(self, event):
         angle_delta = event.angleDelta().y()
@@ -72,6 +105,7 @@ class VasculumApp(QMainWindow):
         super().__init__()
         self.json_path = json_path
         self._json_title = json_title
+        self._first_show = True
         self.setWindowTitle("Infraestructura de años, dominios y superdominios")
         self.setStyleSheet(f"background-color: {Theme.APP_BACKGROUND}; color: {Theme.TEXT_WHITE};")
         
@@ -129,6 +163,35 @@ class VasculumApp(QMainWindow):
         self.setMinimumSize(1400, 700)
 
         self.restore_splitter_state()
+
+        # Restaurar estado visible de la edición del JSON
+        self.restore_editor_visible_state()
+
+        # Conectar el botón para mostrar/ocultar el editor
+        self.view.toggle_button.clicked.connect(self.toggle_json_editor)
+
+    def restore_editor_visible_state(self):
+        editor_visible_setting = self.settings.value("json_editor_visible")
+        if editor_visible_setting is None:
+            self.editor_visible = True
+        elif isinstance(editor_visible_setting, str):
+            self.editor_visible = (editor_visible_setting.lower() == "true")
+        else:
+            self.editor_visible = bool(editor_visible_setting)
+
+        self.json_panel.setVisible(self.editor_visible)
+        btn_text = "◀" if self.editor_visible else "▶"
+        self.view.toggle_button.setText(btn_text)
+        self.view.update_button_position()
+
+    def toggle_json_editor(self):
+        self.editor_visible = not self.editor_visible
+        self.json_panel.setVisible(self.editor_visible)
+        self.settings.setValue("json_editor_visible", self.editor_visible)
+
+        btn_text = "◀" if self.editor_visible else "▶"
+        self.view.toggle_button.setText(btn_text)
+        self.view.update_button_position()
 
     def load_initial_json(self):
         try:
@@ -197,6 +260,17 @@ class VasculumApp(QMainWindow):
         else:
             # Por defecto, dar el 35% del ancho total al JSON editor
             self.splitter.setSizes([350, 650])
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self._first_show:
+            self._first_show = False
+            self.center_domains_container()
+
+    def center_domains_container(self):
+        rect = self.scene.itemsBoundingRect()
+        if not rect.isNull():
+            self.view.centerOn(rect.center())
 
     def closeEvent(self, event):
         # Guardar el estado del splitter al cerrar la aplicación

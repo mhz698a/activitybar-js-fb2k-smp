@@ -29,8 +29,9 @@ class CableItem(QGraphicsPathItem):
         # Generar el camino inicial
         self.update_path()
 
-        # Configurar Tooltip y Habilitar Hover (Paso 3)
+        # Configurar Tooltip, Habilitar Hover y cursor de mano (Paso 3)
         self.setAcceptHoverEvents(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         if self.connection.name:
             tooltip_text = f"{self.connection.name} ({self.connection.from_year} → {self.connection.to_year})"
         else:
@@ -96,13 +97,23 @@ class CableItem(QGraphicsPathItem):
             self.setPath(path)
 
         # 4. Configurar el estilo del cable usando el color centralizado de Theme
-        if self.connection and self.connection.type == "mesolazo_domain_to_domain":
-            color = Theme.CABLE_SPECIAL_COLOR
+        width = 2.0
+        if self.connection:
+            if self.connection.type == "mesolazo_domain_to_domain":
+                color = Theme.CABLE_SPECIAL_COLOR
+            elif self.connection.type == "deuterolazo_de_andrea_cloe":
+                color = Theme.CABLE_DEUTEROLAZO_COLOR
+                width = 4.0
+            elif self.connection.type == "exolazo":
+                color = Theme.CABLE_EXOLAZO_COLOR
+                width = 4.0
+            else:
+                color = Theme.CABLE_COLOR
         else:
             color = Theme.CABLE_COLOR
 
         pen = QPen(QColor(color))
-        pen.setWidthF(2.0)
+        pen.setWidthF(width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         self.setPen(pen)
