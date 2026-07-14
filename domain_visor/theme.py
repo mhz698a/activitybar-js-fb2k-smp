@@ -27,4 +27,3 @@ class Theme:
     CABLE_SPECIAL_COLOR = "#ffffff"
     CABLE_DEUTEROLAZO_COLOR = "#ff1493"  # Rosa fuerte
     CABLE_EXOLAZO_COLOR = "#00bfff"      # Azul celeste
-    CABLE_SUPERCABLE_COLOR = "#8D40F8"
